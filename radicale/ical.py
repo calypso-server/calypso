@@ -57,6 +57,9 @@ class Item(object):
     """Internal iCal item."""
     def __init__(self, text, name=None):
         """Initialize object from ``text`` and different ``kwargs``."""
+
+        print "New item %s = %s\n" % (name, text)
+
         self.text = text
         self._name = name
 
