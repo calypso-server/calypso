@@ -53,7 +53,7 @@ def serialize(headers=(), items=()):
         if part:
             lines.append("\n".join(item.text for item in part))
     lines.append("END:VCALENDAR")
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 
 
 class Item(object):
@@ -214,6 +214,7 @@ class Calendar(object):
 
         items = []
 
+        text = text.replace("\r\n","\n")
         unfold = text.replace("\n ","")
         lines = unfold.splitlines()
         in_item = False
@@ -275,7 +276,7 @@ class Calendar(object):
     def destroy_file(self, item):
         print "Remove item in file %s" % item.path
         os.unlink(item.path)
-        self.git_rm(self, item.path)
+        self.git_rm(item.path)
         self.scan_dir()
 
     def rewrite_file(self, items, path):
@@ -433,6 +434,6 @@ class Calendar(object):
         The date is formatted according to rfc1123-5.2.14.
 
         """
-        scan_dir()
+        self.scan_dir()
         modification_time = time.gmtime(self.mtime)
         return time.strftime("%a, %d %b %Y %H:%M:%S +0000", modification_time)
