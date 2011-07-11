@@ -121,6 +121,8 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
 
+    calendars = {}
+
     @property
     def _calendar(self):
         """The ``ical.Calendar`` object corresponding to the given path."""
@@ -129,7 +131,9 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         attributes = posixpath.normpath(self.path.strip("/")).split("/")
         if len(attributes) >= 2:
             path = "%s/%s" % (attributes[0], attributes[1])
-            return ical.Calendar(path)
+            if not path in CalendarHTTPHandler.calendars:
+                CalendarHTTPHandler.calendars[path] = ical.Calendar(path)
+            return CalendarHTTPHandler.calendars[path]
 
     def _decode(self, text):
         """Try to decode text according to various parameters."""
@@ -242,9 +246,13 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PUT(self):
         """Manage PUT request."""
         item_name = xmlutils.name_from_path(self.path)
-        item = self._calendar.get_item(item_name)
-        if (not item and not self.headers.get("If-Match")) or \
-                (item and self.headers.get("If-Match", item.etag) == item.etag):
+        items = self._calendar.get_items(item_name)
+        if len(items) == 0:
+            etag = 0
+        else:
+            etag = self.headers.get("If-Match", items[0].etag)
+        if (len(items) == 0 and not self.headers.get("If-Match")) or \
+                (len(items) > 0 and etag in (i.etag for i in items)):
             # PUT allowed in 3 cases
             # Case 1: No item and no ETag precondition: Add new item
             # Case 2: Item and ETag precondition verified: Modify item
@@ -258,6 +266,14 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("ETag", etag)
             self.end_headers()
         else:
+            if len(items) == 0:
+                print "Missing item %s" % item_name
+            else:
+                print "Mismatch etag"
+                print "Request %s %s" % (item_name, etag)
+                for i in items:
+                    print "Exist %s %s" % (i.name, i.etag)
+
             # PUT rejected in all other cases
             self.send_response(client.PRECONDITION_FAILED)
 
@@ -267,6 +283,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
         self._answer = xmlutils.report(self.path, xml_request, self._calendar)
 
+        print "report length %d" % len(self._answer)
         self.send_response(client.MULTI_STATUS)
         self.send_header("Content-Length", len(self._answer))
         self.end_headers()

@@ -173,6 +173,7 @@ def propfind(path, xml_request, calendar, depth):
 def put(path, ical_request, calendar):
     """Read PUT requests."""
     name = name_from_path(path)
+    print "put %s" % name
     if name in (item.name for item in calendar.items):
         # PUT is modifying an existing item
         calendar.replace(name, ical_request)
@@ -247,4 +248,6 @@ def report(path, xml_request, calendar):
             status.text = _response(200)
             propstat.append(status)
 
-    return ET.tostring(multistatus, config.get("encoding", "request"))
+    reply = ET.tostring(multistatus, config.get("encoding", "request"))
+    #print "Report returns %s" % reply
+    return reply

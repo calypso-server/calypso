@@ -28,6 +28,9 @@ Define the main classes of a calendar as seen from the server.
 import os
 import codecs
 import time
+import hashlib
+import glob
+import tempfile
 
 from radicale import config
 
@@ -55,13 +58,14 @@ def serialize(headers=(), items=()):
 
 class Item(object):
     """Internal iCal item."""
-    def __init__(self, text, name=None):
+    def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
-        print "New item %s = %s\n" % (name, text)
+        # print "New item %s = %s\n" % (name, text)
 
         self.text = text
         self._name = name
+        self.path = path
 
         # We must synchronize the name in the text and in the object.
         # An item must have a name, determined in order by:
@@ -82,14 +86,22 @@ class Item(object):
                     self._name = line.replace("UID:", "").strip()
                     # Do not break, a ``X-RADICALE-NAME`` can appear next
 
+        if not self._name:
+            h = hashlib.sha1(text.encode("utf-8"));
+            self._name = h.hexdigest();
+
         if "\nX-RADICALE-NAME:" in text:
             for line in self.text.splitlines():
                 if line.startswith("X-RADICALE-NAME:"):
                     self.text = self.text.replace(
                         line, "X-RADICALE-NAME:%s" % self._name)
-        else:
+        elif "\nUID:" in text:
             self.text = self.text.replace(
                 "\nUID:", "\nX-RADICALE-NAME:%s\nUID:" % self._name)
+        else:
+            self.text = self.text.replace(
+                "\nSUMMARY:", "\nX-RADICALE-NAME:%s\nSUMMARY:" % self._name)
+        self._etag = hash(self.text)
 
     @property
     def etag(self):
@@ -98,7 +110,7 @@ class Item(object):
         Etag is mainly used to know if an item has changed.
 
         """
-        return '"%s"' % hash(self.text)
+        return '"%s"' % self._etag
 
     @property
     def name(self):
@@ -136,14 +148,59 @@ class Calendar(object):
     """Internal calendar class."""
     tag = "VCALENDAR"
 
+    def insert_text(self, text, path):
+        for new_item in self._parse(text, (Timezone, Event, Todo), None, path):
+            if new_item not in self.my_items:
+                self.my_items.append(new_item)
+            
+    def insert_file(self, path):
+        try:
+            print "Insert file %s" % path
+            text = open(path).read()
+            self.insert_text(text, path)
+        except IOError:
+            return
+
+    def remove_file(self, path):
+        print "Remove file %s" % path
+        for old_item in self.my_items:
+            if old_item.path == path:
+                self.my_items.remove(old_item)
+        
+    def scan_file(self, path):
+        print "Rescan file %s" % path
+        self.remove_file(path)
+        self.insert_file(path)
+
+    def scan_dir(self):
+        files = glob.glob(self.pattern)
+        mtime = os.path.getmtime(self.path)
+        if mtime == self.mtime:
+            return
+        self.mtime = mtime
+        for file in files:
+            if not file in self.files:
+                self.insert_file(file)
+        for file in self.files:
+            if not file in files:
+                self.remove_file(file)
+        self.files = files
+                
     def __init__(self, path):
         """Initialize the calendar with ``cal`` and ``user`` parameters."""
+        print "New calendar %s" % path
+        
         self.encoding = "utf-8"
         self.owner = path.split("/")[0]
         self.path = os.path.join(FOLDER, path.replace("/", os.path.sep))
+        self.pattern = os.path.join(self.path, "*.ics")
+        self.files = []
+        self.my_items = []
+        self.mtime = 0
+        self.scan_dir()
 
     @staticmethod
-    def _parse(text, item_types, name=None):
+    def _parse(text, item_types, name=None, path=None):
         """Find items with type in ``item_types`` in ``text`` text.
 
         If ``name`` is given, give this name to new items in ``text``.
@@ -157,7 +214,8 @@ class Calendar(object):
 
         items = []
 
-        lines = text.splitlines()
+        unfold = text.replace("\n ","")
+        lines = unfold.splitlines()
         in_item = False
 
         for line in lines:
@@ -174,15 +232,78 @@ class Calendar(object):
                     item_type = item_tags[item_tag]
                     item_text = "\n".join(item_lines)
                     item_name = None if item_tag == "VTIMEZONE" else name
-                    items.append(item_type(item_text, item_name))
+                    item = item_type(item_text, item_name, path)
+                    items.append(item)
 
         return items
 
+    def has_git(self):
+        return os.path.exists(os.path.join(self.path, ".git"))
+
+    def git_add(self, path):
+        if self.has_git():
+            command="cd %s && git add %s && git commit -m'Add %s'" % (self.path, os.path.basename(path), "Add new file")
+            print "Execute git command %s" % command
+            os.system(command)
+    
+    def git_rm(self, path):
+        if self.has_git():
+            command="cd %s && git rm %s && git commit -m'Remove %s'" % (self.path, os.path.basename(path), "Add new file")
+            print "Execute git command %s" % command
+            os.system(command)
+
+    def git_change(self, path):
+        if self.has_git():
+            command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "Add new file")
+            print "Execute git command %s" % command
+            os.system(command)
+            
+    def create_file(self, items):
+        # Create directory if necessary
+        if not os.path.exists(os.path.dirname(self.path)):
+            os.makedirs(os.path.dirname(self.path))
+
+        fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
+        print "Create item in file %s" % new_path
+        file = open(new_path, 'w')
+        file.write(serialize(headers=None, items=items))
+        file.close()
+        os.close(fd)
+        self.git_add(new_path)
+        self.scan_dir()
+
+    def destroy_file(self, item):
+        print "Remove item in file %s" % item.path
+        os.unlink(item.path)
+        self.git_rm(self, item.path)
+        self.scan_dir()
+
+    def rewrite_file(self, items, path):
+        fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
+        print "Rewrite item in file %s (temp %s)" % (path, new_path)
+        file = open(new_path, 'w')
+        file.write(serialize(headers=None, items=items))
+        file.close()
+        os.close(fd)
+        os.rename(new_path, path)
+        self.git_change(self, path)
+        self.scan_file(path)
+        self.scan_dir()
+        
     def get_item(self, name):
         """Get calendar item called ``name``."""
-        for item in self.items:
+        for item in self.my_items:
             if item.name == name:
                 return item
+        return None
+
+    def get_items(self, name):
+        """Get calendar items called ``name``."""
+        items=[]
+        for item in self.my_items:
+            if item.name == name:
+                items.append(item)
+        return items
 
     def append(self, name, text):
         """Append items from ``text`` to calendar.
@@ -190,40 +311,53 @@ class Calendar(object):
         If ``name`` is given, give this name to new items in ``text``.
 
         """
-        items = self.items
 
-        for new_item in self._parse(text, (Timezone, Event, Todo), name):
-            if new_item.name not in (item.name for item in items):
-                items.append(new_item)
-
-        self.write(items=items)
+        new_items = self._parse(text, (Timezone, Event, Todo), name)
+        for new_item in new_items:
+            if new_item.name not in (item.name for item in self.my_items):
+                self.create_file(new_items)
+                break
 
     def remove(self, name):
         """Remove object named ``name`` from calendar."""
-        todos = [todo for todo in self.todos if todo.name != name]
-        events = [event for event in self.events if event.name != name]
+        for old_item in self.my_items:
+            if old_item.name == name:
+                self.destroy_file(old_item)
+                
+#        todos = [todo for todo in self.todos if todo.name != name]
+#        events = [event for event in self.events if event.name != name]
 
-        items = self.timezones + todos + events
-        self.write(items=items)
+#        items = self.timezones + todos + events
+#        self.write(items=items)
 
     def replace(self, name, text):
         """Replace content by ``text`` in objet named ``name`` in calendar."""
-        self.remove(name)
-        self.append(name, text)
+        path=None
+        for old_item in self.my_items:
+            if old_item.name == name:
+                path = old_item.path
+                break
+        new_items = self._parse(text, (Timezone, Event, Todo), name)
+        if path is not None:
+            self.rewrite_file(new_items, path)
+        else:
+            self.remove(name)
+            self.append(name, text)
 
     def write(self, headers=None, items=None):
-        """Write calendar with given parameters."""
-        headers = headers or self.headers or (
-            Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"),
-            Header("VERSION:2.0"))
-        items = items if items is not None else self.items
+        #"""Write calendar with given parameters."""
+        #headers = headers or self.headers or (
+        #    Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"),
+        #    Header("VERSION:2.0"))
+        #items = items if items is not None else self.items
 
         # Create folder if absent
-        if not os.path.exists(os.path.dirname(self.path)):
-            os.makedirs(os.path.dirname(self.path))
+        #if not os.path.exists(os.path.dirname(self.path)):
+        #    os.makedirs(os.path.dirname(self.path))
         
-        text = serialize(headers, items)
-        return open(self.path, "w").write(text)
+        #text = serialize(headers=headers, items=items)
+        #return open(self.path, "w").write(text)
+        return True
 
     @property
     def etag(self):
@@ -238,45 +372,59 @@ class Calendar(object):
     @property
     def text(self):
         """Calendar as plain text."""
-        try:
-            return open(self.path).read()
-        except IOError:
-            return ""
+        self.scan_dir()
+        headers = []
+
+        headers.append(Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"))
+        headers.append(Header("VERSION:2.0"))
+
+        return serialize(headers=headers, items=self.my_items)
 
     @property
     def headers(self):
         """Find headers items in calendar."""
         header_lines = []
 
-        lines = self.text.splitlines()
-        for line in lines:
-            if line.startswith("PRODID:"):
-                header_lines.append(Header(line))
-        for line in lines:
-            if line.startswith("VERSION:"):
-                header_lines.append(Header(line))
+        header_lines.append(Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"))
+        header_lines.append(Header("VERSION:2.0"))
 
         return header_lines
 
     @property
     def items(self):
         """Get list of all items in calendar."""
-        return self._parse(self.text, (Event, Todo, Timezone))
+        self.scan_dir()
+        return self.my_items
 
     @property
     def events(self):
         """Get list of ``Event`` items in calendar."""
-        return self._parse(self.text, (Event,))
+        self.scan_dir()
+        events=[]
+        for item in self.my_items:
+            if item.__class__ == Event:
+                events.append(item)
+        return events
 
     @property
     def todos(self):
         """Get list of ``Todo`` items in calendar."""
-        return self._parse(self.text, (Todo,))
+        self.scan_dir()
+        events=[]
+        for item in self.my_items:
+            if item.__class__ == Todo:
+                events.append(item)
+        return events
 
     @property
     def timezones(self):
-        """Get list of ``Timezome`` items in calendar."""
-        return self._parse(self.text, (Timezone,))
+        """Get list of ``Timezone`` items in calendar."""
+        self.scan_dir()
+        events=[]
+        for item in self.my_items:
+            if item.__class__ == Timezone and not item.name in (event.name for event in events):
+                events.append(item)
+        return events
 
     @property
     def last_modified(self):
@@ -285,9 +433,6 @@ class Calendar(object):
         The date is formatted according to rfc1123-5.2.14.
 
         """
-        # Create calendar if needed
-        if not os.path.exists(self.path):
-            self.write()
-
-        modification_time = time.gmtime(os.path.getmtime(self.path))
+        scan_dir()
+        modification_time = time.gmtime(self.mtime)
         return time.strftime("%a, %d %b %Y %H:%M:%S +0000", modification_time)
