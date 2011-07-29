@@ -121,6 +121,43 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
 
+    def handle_one_request(self):
+        """Handle a single HTTP request.
+
+        You normally don't need to override this method; see the class
+        __doc__ string for information on how to handle specific HTTP
+        commands such as GET and POST.
+
+        """
+        try:
+            self.raw_requestline = self.rfile.readline(4000000)
+            print ("Raw line %s" % self.raw_requestline)
+            if len(self.raw_requestline) > 65536:
+                self.requestline = ''
+                self.request_version = ''
+                self.command = ''
+                self.send_error(414)
+                return
+            if not self.raw_requestline:
+                self.close_connection = 1
+                return
+            if not self.parse_request():
+                # An error code has been sent, just exit
+                return
+            mname = 'do_' + self.command
+            if not hasattr(self, mname):
+                self.send_error(501, "Unsupported method (%r)" % self.command)
+                return
+            method = getattr(self, mname)
+            method()
+            self.wfile.flush() #actually send the response if not already done.
+        except socket.timeout as e:
+            #a read or a write timed out.  Discard this connection
+            self.log_error("Request timed out: %r", e)
+            self.close_connection = 1
+            return
+
+
     calendars = {}
 
     @property
@@ -175,8 +212,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             # Get calendar item
             item = self._calendar.get_item(item_name)
             if item:
-                items = self._calendar.timezones
-                items.append(item)
+                items = self._calendar.get_full(item)
                 answer_text = ical.serialize(
                     headers=self._calendar.headers, items=items)
                 etag = item.etag
@@ -267,12 +303,12 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
         else:
             if len(items) == 0:
-                print "Missing item %s" % item_name
+                print ("Missing item %s" % item_name)
             else:
-                print "Mismatch etag"
-                print "Request %s %s" % (item_name, etag)
+                print ("Mismatch etag")
+                print ("Request %s %s" % (item_name, etag))
                 for i in items:
-                    print "Exist %s %s" % (i.name, i.etag)
+                    print ("Exist %s %s" % (i.name, i.etag))
 
             # PUT rejected in all other cases
             self.send_response(client.PRECONDITION_FAILED)
@@ -282,8 +318,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage REPORT request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
         self._answer = xmlutils.report(self.path, xml_request, self._calendar)
-
-        print "report length %d" % len(self._answer)
         self.send_response(client.MULTI_STATUS)
         self.send_header("Content-Length", len(self._answer))
         self.end_headers()

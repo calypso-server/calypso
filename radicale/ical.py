@@ -52,8 +52,8 @@ def serialize(headers=(), items=()):
     for part in (headers, items):
         if part:
             lines.append("\n".join(item.text for item in part))
-    lines.append("END:VCALENDAR")
-    return "\n".join(lines) + "\n"
+    lines.append("END:VCALENDAR\n")
+    return "\n".join(lines)
 
 
 class Item(object):
@@ -121,7 +121,6 @@ class Item(object):
         """
         return self._name
 
-
 class Header(Item):
     """Internal header class."""
 
@@ -155,20 +154,24 @@ class Calendar(object):
             
     def insert_file(self, path):
         try:
-            print "Insert file %s" % path
+            print ("Insert file %s" % path)
             text = open(path).read()
             self.insert_text(text, path)
         except IOError:
             return
 
     def remove_file(self, path):
-        print "Remove file %s" % path
+        print ("Remove file %s" % path)
+        old_items=[]
         for old_item in self.my_items:
             if old_item.path == path:
-                self.my_items.remove(old_item)
+                old_items.append(old_item)
+                
+        for old_item in old_items:
+            self.my_items.remove(old_item)
         
     def scan_file(self, path):
-        print "Rescan file %s" % path
+        print ("Rescan file %s" % path)
         self.remove_file(path)
         self.insert_file(path)
 
@@ -188,7 +191,7 @@ class Calendar(object):
                 
     def __init__(self, path):
         """Initialize the calendar with ``cal`` and ``user`` parameters."""
-        print "New calendar %s" % path
+        print ("New calendar %s" % path)
         
         self.encoding = "utf-8"
         self.owner = path.split("/")[0]
@@ -214,9 +217,7 @@ class Calendar(object):
 
         items = []
 
-        text = text.replace("\r\n","\n")
-        unfold = text.replace("\n ","")
-        lines = unfold.splitlines()
+        lines = text.splitlines()
         in_item = False
 
         for line in lines:
@@ -243,20 +244,20 @@ class Calendar(object):
 
     def git_add(self, path):
         if self.has_git():
-            command="cd %s && git add %s && git commit -m'Add %s'" % (self.path, os.path.basename(path), "Add new file")
-            print "Execute git command %s" % command
+            command="cd %s && git add %s && git commit -m'Add %s'" % (self.path, os.path.basename(path), "new file")
+            print ("Execute git command %s" % command)
             os.system(command)
     
     def git_rm(self, path):
         if self.has_git():
-            command="cd %s && git rm %s && git commit -m'Remove %s'" % (self.path, os.path.basename(path), "Add new file")
-            print "Execute git command %s" % command
+            command="cd %s && git rm %s && git commit -m'Remove %s'" % (self.path, os.path.basename(path), "old file")
+            print ("Execute git command %s" % command)
             os.system(command)
 
     def git_change(self, path):
         if self.has_git():
-            command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "Add new file")
-            print "Execute git command %s" % command
+            command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "modified file")
+            print ("Execute git command %s" % command)
             os.system(command)
             
     def create_file(self, items):
@@ -265,7 +266,7 @@ class Calendar(object):
             os.makedirs(os.path.dirname(self.path))
 
         fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        print "Create item in file %s" % new_path
+        print ("Create item in file %s" % new_path)
         file = open(new_path, 'w')
         file.write(serialize(headers=None, items=items))
         file.close()
@@ -274,20 +275,23 @@ class Calendar(object):
         self.scan_dir()
 
     def destroy_file(self, item):
-        print "Remove item in file %s" % item.path
-        os.unlink(item.path)
-        self.git_rm(item.path)
+        print ("Remove item in file %s" % item.path)
+        try:
+            os.unlink(item.path)
+            self.git_rm(item.path)
+        except OSError:
+            print ("Failed to remove file %s" %item.path)
         self.scan_dir()
 
     def rewrite_file(self, items, path):
         fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        print "Rewrite item in file %s (temp %s)" % (path, new_path)
+        print ("Rewrite item in file %s (temp %s)" % (path, new_path))
         file = open(new_path, 'w')
         file.write(serialize(headers=None, items=items))
         file.close()
         os.close(fd)
         os.rename(new_path, path)
-        self.git_change(self, path)
+        self.git_change(path)
         self.scan_file(path)
         self.scan_dir()
         
@@ -298,6 +302,14 @@ class Calendar(object):
                 return item
         return None
 
+    def get_full(self, base):
+        """Get everything that is stored with ``item``."""
+        items=[]
+        for item in self.my_items:
+            if item.path == base.path:
+                items.append(item)
+        return items
+        
     def get_items(self, name):
         """Get calendar items called ``name``."""
         items=[]

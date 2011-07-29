@@ -173,7 +173,7 @@ def propfind(path, xml_request, calendar, depth):
 def put(path, ical_request, calendar):
     """Read PUT requests."""
     name = name_from_path(path)
-    print "put %s" % name
+    print ("put %s" % name)
     if name in (item.name for item in calendar.items):
         # PUT is modifying an existing item
         calendar.replace(name, ical_request)
@@ -224,6 +224,7 @@ def report(path, xml_request, calendar):
             response = ET.Element(_tag("D", "response"))
             multistatus.append(response)
 
+            print ("Returning from path %s" % item.path)
             href = ET.Element(_tag("D", "href"))
             href.text = path + item.name
             response.append(href)
@@ -240,8 +241,8 @@ def report(path, xml_request, calendar):
                     element.text = item.etag
                 elif tag == _tag("C", "calendar-data"):
                     if isinstance(item, (ical.Event, ical.Todo)):
-                        element.text = ical.serialize(
-                            calendar.headers, calendar.timezones + [item])
+                        items = calendar.get_full(item)
+                        element.text = ical.serialize(calendar.headers, items)
                 prop.append(element)
 
             status = ET.Element(_tag("D", "status"))
@@ -249,5 +250,5 @@ def report(path, xml_request, calendar):
             propstat.append(status)
 
     reply = ET.tostring(multistatus, config.get("encoding", "request"))
-    #print "Report returns %s" % reply
+    # print ("Report returns %s" % reply)
     return reply
