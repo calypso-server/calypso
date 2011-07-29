@@ -224,7 +224,7 @@ def report(path, xml_request, calendar):
             response = ET.Element(_tag("D", "response"))
             multistatus.append(response)
 
-            print ("Returning from path %s" % item.path)
+#            print ("Returning from path %s" % item.path)
             href = ET.Element(_tag("D", "href"))
             href.text = path + item.name
             response.append(href)

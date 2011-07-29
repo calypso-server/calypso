@@ -154,14 +154,14 @@ class Calendar(object):
             
     def insert_file(self, path):
         try:
-            print ("Insert file %s" % path)
+#            print ("Insert file %s" % path)
             text = open(path).read()
             self.insert_text(text, path)
         except IOError:
             return
 
     def remove_file(self, path):
-        print ("Remove file %s" % path)
+#        print ("Remove file %s" % path)
         old_items=[]
         for old_item in self.my_items:
             if old_item.path == path:
@@ -171,7 +171,7 @@ class Calendar(object):
             self.my_items.remove(old_item)
         
     def scan_file(self, path):
-        print ("Rescan file %s" % path)
+#        print ("Rescan file %s" % path)
         self.remove_file(path)
         self.insert_file(path)
 
