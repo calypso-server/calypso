@@ -1,12 +1,12 @@
 ==========================
- Radicale - CalDAV Server
+ Cadaver - CalDAV Server
 ==========================
 
 --------
  README
 --------
 
-The Radicale Project is a free and open-source CalDAV calendar server.
+The Cadaver Project is a free and open-source CalDAV calendar server.
 
-For complete documentation, please visit the `Radicale online documentation
-<http://www.radicale.org/documentation>`_
+For complete documentation, please visit the `Cadaver online documentation
+<http://www.cadaver.org/documentation>`_

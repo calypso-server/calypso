@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,10 +16,10 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Radicale calendar classes.
+Cadaver calendar classes.
 
 Define the main classes of a calendar as seen from the server.
 
@@ -28,11 +28,13 @@ Define the main classes of a calendar as seen from the server.
 import os
 import codecs
 import time
+import calendar
 import hashlib
 import glob
 import tempfile
+import vobject
 
-from radicale import config
+from cadaver import config
 
 
 FOLDER = os.path.expanduser(config.get("storage", "folder"))
@@ -55,13 +57,37 @@ def serialize(headers=(), items=()):
     lines.append("END:VCALENDAR\n")
     return "\n".join(lines)
 
+def parse_time(line):
+    dtstart = line.rsplit(":",1)[1]
+    print ("dtstart %s " % dtstart)
+    try:
+        return time.strptime("%Y%m%dT%H%M%SZ", dtstart)
+    except ValueError:
+        try:
+            return time.strptime("%Y%m%dT%H%M%S", dtstart)
+        except ValueError:
+            return 0
 
 class Item(object):
     """Internal iCal item."""
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
-        # print "New item %s = %s\n" % (name, text)
+        print "New item %s = %s\n" % (name, text)
+
+        lines = text.splitlines(True)
+        newlines=""
+        for line in lines:
+            if line.find(":") >= 0:
+                newlines = newlines + line
+
+        text = newlines
+
+#        try:
+#            j = vobject.readOne(text)
+#            j.prettyPrint()
+#        except Exception:
+#            print ("parse error\n")
 
         self.text = text
         self._name = name
@@ -71,37 +97,43 @@ class Item(object):
         # An item must have a name, determined in order by:
         #
         # - the ``name`` parameter
-        # - the ``X-RADICALE-NAME`` iCal property (for Events and Todos)
+        # - the ``X-CADAVER-NAME`` iCal property (for Events and Todos)
         # - the ``UID`` iCal property (for Events and Todos)
         # - the ``TZID`` iCal property (for Timezones)
         if not self._name:
             for line in self.text.splitlines():
-                if line.startswith("X-RADICALE-NAME:"):
-                    self._name = line.replace("X-RADICALE-NAME:", "").strip()
+                if line.startswith("X-CADAVER-NAME:"):
+                    self._name = line.replace("X-CADAVER-NAME:", "").strip()
                     break
                 elif line.startswith("TZID:"):
                     self._name = line.replace("TZID:", "").strip()
                     break
                 elif line.startswith("UID:"):
                     self._name = line.replace("UID:", "").strip()
-                    # Do not break, a ``X-RADICALE-NAME`` can appear next
+                    # Do not break, a ``X-CADAVER-NAME`` can appear next
 
+#        self.dtstart = 0
+#        for line in self.text.splitlines():
+#            if line.startswith("DTSTART"):
+#                self.dtstart = parse_time(line)
+#                print ("dtstart %s -> %d" % (line, self.dtstart))
+
+        h = hashlib.sha1(text.encode("utf-8"))
+        self._etag = h.hexdigest()
         if not self._name:
-            h = hashlib.sha1(text.encode("utf-8"));
-            self._name = h.hexdigest();
+            self._name = self._etag
 
-        if "\nX-RADICALE-NAME:" in text:
+        if "\nX-CADAVER-NAME:" in text:
             for line in self.text.splitlines():
-                if line.startswith("X-RADICALE-NAME:"):
+                if line.startswith("X-CADAVER-NAME:"):
                     self.text = self.text.replace(
-                        line, "X-RADICALE-NAME:%s" % self._name)
+                        line, "X-CADAVER-NAME:%s" % self._name)
         elif "\nUID:" in text:
             self.text = self.text.replace(
-                "\nUID:", "\nX-RADICALE-NAME:%s\nUID:" % self._name)
+                "\nUID:", "\nX-CADAVER-NAME:%s\nUID:" % self._name)
         else:
             self.text = self.text.replace(
-                "\nSUMMARY:", "\nX-RADICALE-NAME:%s\nSUMMARY:" % self._name)
-        self._etag = hash(self.text)
+                "\nSUMMARY:", "\nX-CADAVER-NAME:%s\nSUMMARY:" % self._name)
 
     @property
     def etag(self):
@@ -110,7 +142,7 @@ class Item(object):
         Etag is mainly used to know if an item has changed.
 
         """
-        return '"%s"' % self._etag
+        return '%s' % self._etag
 
     @property
     def name(self):
@@ -154,14 +186,14 @@ class Calendar(object):
             
     def insert_file(self, path):
         try:
-#            print ("Insert file %s" % path)
+            print ("Insert file %s" % path)
             text = open(path).read()
             self.insert_text(text, path)
         except IOError:
             return
 
     def remove_file(self, path):
-#        print ("Remove file %s" % path)
+        print ("Remove file %s" % path)
         old_items=[]
         for old_item in self.my_items:
             if old_item.path == path:
@@ -171,16 +203,19 @@ class Calendar(object):
             self.my_items.remove(old_item)
         
     def scan_file(self, path):
-#        print ("Rescan file %s" % path)
+        print ("Rescan file %s" % path)
         self.remove_file(path)
         self.insert_file(path)
 
     def scan_dir(self):
-        files = glob.glob(self.pattern)
-        mtime = os.path.getmtime(self.path)
-        if mtime == self.mtime:
+        try:
+            mtime = os.path.getmtime(self.path)
+            if mtime == self.mtime:
+                return
+        except OSError:
             return
         self.mtime = mtime
+        files = glob.glob(self.pattern)
         for file in files:
             if not file in self.files:
                 self.insert_file(file)
@@ -217,7 +252,9 @@ class Calendar(object):
 
         items = []
 
-        lines = text.splitlines()
+        jtext = text.replace("\n ", "")
+
+        lines = jtext.splitlines()
         in_item = False
 
         for line in lines:
@@ -360,7 +397,7 @@ class Calendar(object):
     def write(self, headers=None, items=None):
         #"""Write calendar with given parameters."""
         #headers = headers or self.headers or (
-        #    Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"),
+        #    Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"),
         #    Header("VERSION:2.0"))
         #items = items if items is not None else self.items
 
@@ -375,7 +412,7 @@ class Calendar(object):
     @property
     def etag(self):
         """Etag from calendar."""
-        return '"%s"' % hash(self.text)
+        return '%s' % hash(self.text)
 
     @property
     def name(self):
@@ -388,7 +425,7 @@ class Calendar(object):
         self.scan_dir()
         headers = []
 
-        headers.append(Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"))
+        headers.append(Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
         headers.append(Header("VERSION:2.0"))
 
         return serialize(headers=headers, items=self.my_items)
@@ -398,7 +435,7 @@ class Calendar(object):
         """Find headers items in calendar."""
         header_lines = []
 
-        header_lines.append(Header("PRODID:-//Radicale//NONSGML Radicale Server//EN"))
+        header_lines.append(Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
         header_lines.append(Header("VERSION:2.0"))
 
         return header_lines

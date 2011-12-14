@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 XML and iCal requests manager.
@@ -29,7 +29,7 @@ in them for XML requests (all but PUT).
 
 import xml.etree.ElementTree as ET
 
-from radicale import client, config, ical
+from cadaver import client, config, ical
 
 
 NAMESPACES = {
@@ -49,7 +49,7 @@ def _response(code):
 
 
 def name_from_path(path):
-    """Return Radicale item name from ``path``."""
+    """Return Cadaver item name from ``path``."""
     path_parts = path.strip("/").split("/")
     return path_parts[-1] if len(path_parts) > 2 else None
 

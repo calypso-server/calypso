@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,15 +16,20 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Fake ACL.
+Users and rights management.
 
-No rights management.
+This module loads a list of users with access rights, according to the acl
+configuration.
 
 """
 
-def has_right(*_):
-    """Check if ``user``/``password`` couple is valid."""
-    return True
+from cadaver import config
+
+
+def load():
+    """Load list of available ACL managers."""
+    module = __import__("cadaver.acl", fromlist=[config.get("acl", "type")])
+    return getattr(module, config.get("acl", "type"))

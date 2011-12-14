@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,10 +16,10 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Radicale Server module.
+Cadaver Server module.
 
 This module offers 3 useful classes:
 
@@ -28,7 +28,7 @@ This module offers 3 useful classes:
   managing SSL connections;
 - ``CalendarHTTPHandler`` is a CalDAV request handler for HTTP(S) servers.
 
-To use this module, you should take a look at the file ``radicale.py`` that
+To use this module, you should take a look at the file ``cadaver.py`` that
 should have been included in this package.
 
 """
@@ -46,7 +46,7 @@ except ImportError:
     import BaseHTTPServer as server
 # pylint: enable=F0401
 
-from radicale import acl, config, ical, xmlutils
+from cadaver import acl, config, ical, xmlutils
 
 
 VERSION = "0.5"
@@ -74,7 +74,7 @@ def _check(request, function):
         request.send_response(client.UNAUTHORIZED)
         request.send_header(
             "WWW-Authenticate",
-            "Basic realm=\"Radicale Server - Password Required\"")
+            "Basic realm=\"Cadaver Server - Password Required\"")
         request.end_headers()
     # pylint: enable=W0212
 
@@ -181,7 +181,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         content_type = self.headers.get("Content-Type", None)
         if content_type and "charset=" in content_type:
             charsets.append(content_type.split("charset=")[1].strip())
-        # Then append default Radicale charset
+        # Then append default Cadaver charset
         charsets.append(self._encoding)
         # Then append various fallbacks
         charsets.append("utf-8")
@@ -317,10 +317,12 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_REPORT(self):
         """Manage REPORT request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+        print ("report %s" % xml_request)
         self._answer = xmlutils.report(self.path, xml_request, self._calendar)
         self.send_response(client.MULTI_STATUS)
         self.send_header("Content-Length", len(self._answer))
         self.end_headers()
+        print ("answer %s" % self._answer)
         self.wfile.write(self._answer)
 
     # pylint: enable=C0103

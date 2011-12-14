@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Htpasswd ACL.
@@ -30,7 +30,7 @@ supported, but md5 is not (see ``htpasswd`` man page to understand why).
 import base64
 import hashlib
 
-from radicale import config
+from cadaver import config
 
 
 def _plain(hash_value, password):

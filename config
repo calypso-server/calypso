@@ -1,7 +1,7 @@
-# Config file for Radicale - A simple calendar server
+# Config file for Cadaver - A simple calendar server
 #
-# Place it into /etc/radicale/config (global) 
-# or ~/.config/radicale/config (user)
+# Place it into /etc/cadaver/config (global) 
+# or ~/.config/cadaver/config (user)
 #
 # The current values are the default ones
 
@@ -32,7 +32,7 @@ type = fake
 # Personal calendars only available for logged in users (if needed)
 personal = False
 # Htpasswd filename (if needed)
-filename = /etc/radicale/users
+filename = /etc/cadaver/users
 # Htpasswd encryption method (if needed)
 # Value: plain | sha1 | crypt
 encryption = crypt
@@ -40,6 +40,6 @@ encryption = crypt
 [storage]
 # Folder for storing local calendars,
 # created if not present
-folder = ~/.config/radicale/calendars
+folder = ~/.config/cadaver/calendars
 
 # vim:ft=cfg

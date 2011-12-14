@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
+# Copyright © 2011 Keith Packard
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -17,18 +18,18 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 # This file is just a script, allow [a-z0-9]* variable names
 # pylint: disable-msg=C0103
 
-# ``import radicale`` refers to the ``radicale`` module, not ``radicale.py`` 
+# ``import cadaver`` refers to the ``cadaver`` module, not ``cadaver.py`` 
 # pylint: disable-msg=W0406
 
 """
-Radicale Server entry point.
+Cadaver Server entry point.
 
-Launch the Radicale Server according to configuration and command-line
+Launch the Cadaver Server according to configuration and command-line
 arguments.
 
 """
@@ -39,7 +40,7 @@ import os
 import sys
 import optparse
 
-import radicale
+import cadaver
 
 # Get command-line options
 parser = optparse.OptionParser()
@@ -49,56 +50,56 @@ parser.add_option(
     help="show version and exit")
 parser.add_option(
     "-d", "--daemon", action="store_true",
-    default=radicale.config.getboolean("server", "daemon"),
+    default=cadaver.config.getboolean("server", "daemon"),
     help="launch as daemon")
 parser.add_option(
     "-f", "--foreground", action="store_false", dest="daemon",
     help="launch in foreground (opposite of --daemon)")
 parser.add_option(
     "-H", "--host",
-    default=radicale.config.get("server", "host"),
+    default=cadaver.config.get("server", "host"),
     help="set server hostname")
 parser.add_option(
     "-p", "--port", type="int",
-    default=radicale.config.getint("server", "port"),
+    default=cadaver.config.getint("server", "port"),
     help="set server port")
 parser.add_option(
     "-s", "--ssl", action="store_true",
-    default=radicale.config.getboolean("server", "ssl"),
+    default=cadaver.config.getboolean("server", "ssl"),
     help="use SSL connection")
 parser.add_option(
     "-S", "--no-ssl", action="store_false", dest="ssl",
     help="do not use SSL connection (opposite of --ssl)")
 parser.add_option(
     "-k", "--key",
-    default=radicale.config.get("server", "key"),
+    default=cadaver.config.get("server", "key"),
     help="private key file ")
 parser.add_option(
     "-c", "--certificate",
-    default=radicale.config.get("server", "certificate"),
+    default=cadaver.config.get("server", "certificate"),
     help="certificate file ")
 options = parser.parse_args()[0]
 
-# Update Radicale configuration according to options
+# Update Cadaver configuration according to options
 for option in parser.option_list:
     key = option.dest
     if key:
         value = getattr(options, key)
-        radicale.config.set("server", key, value)
+        cadaver.config.set("server", key, value)
 
 # Print version and exit if the option is given
 if options.version:
-    print(radicale.VERSION)
+    print(cadaver.VERSION)
     sys.exit()
 
-# Fork if Radicale is launched as daemon
+# Fork if Cadaver is launched as daemon
 if options.daemon:
     if os.fork():
         sys.exit()
     sys.stdout = sys.stderr = open(os.devnull, "w")
 
 # Launch calendar server
-server_class = radicale.HTTPSServer if options.ssl else radicale.HTTPServer
+server_class = cadaver.HTTPSServer if options.ssl else cadaver.HTTPServer
 server = server_class(
-    (options.host, options.port), radicale.CalendarHTTPHandler)
+    (options.host, options.port), cadaver.CalendarHTTPHandler)
 server.serve_forever()

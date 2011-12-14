@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Radicale Server - Calendar Server
+# This file is part of Cadaver Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,10 +16,10 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Radicale.  If not, see <http://www.gnu.org/licenses/>.
+# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Radicale configuration module.
+Cadaver configuration module.
 
 Give a configparser-like interface to read and write configuration.
 
@@ -51,10 +51,10 @@ INITIAL_CONFIG = {
     "acl": {
         "type": "fake",
         "personal": "False",
-        "filename": "/etc/radicale/users",
+        "filename": "/etc/cadaver/users",
         "encryption": "crypt"},
     "storage": {
-        "folder": os.path.expanduser("~/.config/radicale/calendars")}}
+        "folder": os.path.expanduser("~/.config/cadaver/calendars")}}
 
 # Create a ConfigParser and configure it
 _CONFIG_PARSER = ConfigParser()
@@ -64,8 +64,8 @@ for section, values in INITIAL_CONFIG.items():
     for key, value in values.items():
         _CONFIG_PARSER.set(section, key, value)
 
-_CONFIG_PARSER.read("/etc/radicale/config")
-_CONFIG_PARSER.read(os.path.expanduser("~/.config/radicale/config"))
+_CONFIG_PARSER.read("/etc/cadaver/config")
+_CONFIG_PARSER.read(os.path.expanduser("~/.config/cadaver/config"))
 
 # Wrap config module into ConfigParser instance
 sys.modules[__name__] = _CONFIG_PARSER
