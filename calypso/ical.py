@@ -57,7 +57,7 @@ class Item(object):
         lines = text.splitlines(True)
         newlines=""
         for line in lines:
-            if line.find(":") >= 0:
+            if line.startswith(" ") or line.find(":") >= 0:
                 newlines = newlines + line
 
         try:
@@ -68,23 +68,28 @@ class Item(object):
 
         self.path = path
 
+        if not self.object.contents.has_key("x_calypso_name"):
+            if not name:
+                for child in self.object.getChildren():
+                    if child.name == 'VEVENT' or child.name == 'VCARD':
+                        if not child.contents.has_key('uid'):
+                            if not name:
+                                h = hashlib.sha1(self.object.serialize())
+                                name = h.hexdigest()
+                            child.add('UID').value = name
+                        name = child.uid.value
+                        break
+            self.object.add("X-CALYPSO-NAME").value = name
+            print ("set calypso name to %s %s" % (self.object.x_calypso_name.value, name))
+        else:
+            print ("object already has calypso name" % self.object.x_calypso_name.value)
+
+        self.name = self.object.x_calypso_name.value
+            
         h = hashlib.sha1(self.object.serialize())
         self.etag = h.hexdigest()
 
-        for child in self.object.getChildren():
-            if child.name == 'VEVENT' or child.name == 'VCARD':
-                if child.contents.has_key('uid'):
-                    if name:
-                        child.uid.value = name
-                    self.name = child.uid.value
-                else:
-                    if not name:
-                        name = self.etag
-                    child.add('UID').value = name
-                    self.name = name
-                break
-        print ("uid %s\n" % self.name)
-
+        print ("name %s\n" % self.name)
 
     @property
     def text(self):
@@ -313,7 +318,7 @@ class Calendar(object):
         """
 
         new_item = Item(text, name, None)
-        if new_item.uid not in (item.uid for item in self.my_items):
+        if new_item.name not in (item.name for item in self.my_items):
                 self.create_file(new_item)
 
     def remove(self, name):

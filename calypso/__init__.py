@@ -304,6 +304,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             # Case 3: Item and no Etag precondition: Force modifying item
             ical_request = self._decode(
                 self.rfile.read(int(self.headers["Content-Length"])))
+            print ("put %s\n" % ical_request)
             xmlutils.put(self.path, ical_request, self._calendar)
             etag = self._calendar.get_item(item_name).etag
 
