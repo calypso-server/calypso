@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This file is part of Cadaver Server - Calendar Server
+# This file is part of Calypso Server - Calendar Server
 # Copyright © 2009-2011 Guillaume Ayoub
 #
 # This library is free software: you can redistribute it and/or modify
@@ -15,24 +15,24 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Cadaver CalDAV server
+Calypso CalDAV server
 ======================
 
-The Cadaver Project is a CalDAV calendar server.  It aims to be a light
+The Calypso Project is a CalDAV calendar server.  It aims to be a light
 solution, easy to use, easy to install, easy to configure.  As a consequence,
 it requires few software dependances and is pre-configured to work
 out-of-the-box.
 
-The Cadaver Project runs on most of the UNIX-like platforms (Linux, BSD,
+The Calypso Project runs on most of the UNIX-like platforms (Linux, BSD,
 MacOS X) and Windows.  It is known to work with Evolution 2.30+, Lightning 0.9+
 and Sunbird 0.9+. It is free and open-source software, released under GPL
 version 3.
 
-For further information, please visit the `Cadaver Website
-<http://www.cadaver.org/>`_.
+For further information, please visit the `Calypso Website
+<http://www.calypso.org/>`_.
 
 """
 
@@ -40,7 +40,7 @@ import os
 from distutils.core import setup
 from distutils.command.build_scripts import build_scripts
 
-import cadaver
+import calypso
 
 
 # build_scripts is known to have a lot of public methods
@@ -49,7 +49,7 @@ class BuildScripts(build_scripts):
     """Build the package."""
     def run(self):
         """Run building."""
-        # These lines remove the .py extension from the cadaver executable
+        # These lines remove the .py extension from the calypso executable
         self.mkpath(self.build_dir)
         for script in self.scripts:
             root, _ = os.path.splitext(script)
@@ -57,23 +57,23 @@ class BuildScripts(build_scripts):
 # pylint: enable=R0904
 
 
-# When the version is updated, ``cadaver.VERSION`` must be modified.
+# When the version is updated, ``calypso.VERSION`` must be modified.
 # A new section in the ``NEWS`` file must be added too.
 setup(
-    name="Cadaver",
-    version=cadaver.VERSION,
+    name="Calypso",
+    version=calypso.VERSION,
     description="CalDAV and CardDAV Server",
     long_description=__doc__,
     author="Keith Packard",
     author_email="keithp@keithp.com",
     url="http://keithp.com/",
-    download_url="http://keithp.com/git/cadaver" % \
-        cadaver.VERSION,
+    download_url="http://keithp.com/git/calypso" % \
+        calypso.VERSION,
     license="GNU GPL v3",
     platforms="Any",
-    packages=["cadaver", "cadaver.acl"],
-    provides=["cadaver"],
-    scripts=["cadaver.py"],
+    packages=["calypso", "calypso.acl"],
+    provides=["calypso"],
+    scripts=["calypso.py"],
     cmdclass={"build_scripts": BuildScripts},
     keywords=["calendar", "CalDAV"],
     classifiers=[

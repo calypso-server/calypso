@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Cadaver Server - Calendar Server
+# This file is part of Calypso Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -17,10 +17,10 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Cadaver calendar classes.
+Calypso calendar classes.
 
 Define the main classes of a calendar as seen from the server.
 
@@ -35,7 +35,7 @@ import glob
 import tempfile
 import vobject
 
-from cadaver import config
+from calypso import config
 
 FOLDER = os.path.expanduser(config.get("storage", "folder"))
     
@@ -345,7 +345,7 @@ class Calendar(object):
     def write(self, headers=None, items=None):
         #"""Write calendar with given parameters."""
         #headers = headers or self.headers or (
-        #    Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"),
+        #    Header("PRODID:-//Calypso//NONSGML Calypso Server//EN"),
         #    Header("VERSION:2.0"))
         #items = items if items is not None else self.items
 
@@ -376,7 +376,7 @@ class Calendar(object):
         self.scan_dir()
         headers = []
 
-#        headers.append(Item("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
+#        headers.append(Item("PRODID:-//Calypso//NONSGML Calypso Server//EN"))
 #        headers.append(Item("VERSION:2.0"))
 
         return ""
@@ -386,7 +386,7 @@ class Calendar(object):
         """Find headers items in calendar."""
         header_lines = []
 
-#        header_lines.append(Item("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
+#        header_lines.append(Item("PRODID:-//Calypso//NONSGML Calypso Server//EN"))
 #        header_lines.append(Item("VERSION:2.0"))
 
         return header_lines

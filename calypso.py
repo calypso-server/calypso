@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This file is part of Cadaver Server - Calendar Server
+# This file is part of Calypso Server - Calendar Server
 # Copyright © 2011 Keith Packard
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
@@ -18,18 +18,18 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 # This file is just a script, allow [a-z0-9]* variable names
 # pylint: disable-msg=C0103
 
-# ``import cadaver`` refers to the ``cadaver`` module, not ``cadaver.py`` 
+# ``import calypso`` refers to the ``calypso`` module, not ``calypso.py`` 
 # pylint: disable-msg=W0406
 
 """
-Cadaver Server entry point.
+Calypso Server entry point.
 
-Launch the Cadaver Server according to configuration and command-line
+Launch the Calypso Server according to configuration and command-line
 arguments.
 
 """
@@ -40,7 +40,7 @@ import os
 import sys
 import optparse
 
-import cadaver
+import calypso
 
 # Get command-line options
 parser = optparse.OptionParser()
@@ -50,56 +50,56 @@ parser.add_option(
     help="show version and exit")
 parser.add_option(
     "-d", "--daemon", action="store_true",
-    default=cadaver.config.getboolean("server", "daemon"),
+    default=calypso.config.getboolean("server", "daemon"),
     help="launch as daemon")
 parser.add_option(
     "-f", "--foreground", action="store_false", dest="daemon",
     help="launch in foreground (opposite of --daemon)")
 parser.add_option(
     "-H", "--host",
-    default=cadaver.config.get("server", "host"),
+    default=calypso.config.get("server", "host"),
     help="set server hostname")
 parser.add_option(
     "-p", "--port", type="int",
-    default=cadaver.config.getint("server", "port"),
+    default=calypso.config.getint("server", "port"),
     help="set server port")
 parser.add_option(
     "-s", "--ssl", action="store_true",
-    default=cadaver.config.getboolean("server", "ssl"),
+    default=calypso.config.getboolean("server", "ssl"),
     help="use SSL connection")
 parser.add_option(
     "-S", "--no-ssl", action="store_false", dest="ssl",
     help="do not use SSL connection (opposite of --ssl)")
 parser.add_option(
     "-k", "--key",
-    default=cadaver.config.get("server", "key"),
+    default=calypso.config.get("server", "key"),
     help="private key file ")
 parser.add_option(
     "-c", "--certificate",
-    default=cadaver.config.get("server", "certificate"),
+    default=calypso.config.get("server", "certificate"),
     help="certificate file ")
 options = parser.parse_args()[0]
 
-# Update Cadaver configuration according to options
+# Update Calypso configuration according to options
 for option in parser.option_list:
     key = option.dest
     if key:
         value = getattr(options, key)
-        cadaver.config.set("server", key, value)
+        calypso.config.set("server", key, value)
 
 # Print version and exit if the option is given
 if options.version:
-    print(cadaver.VERSION)
+    print(calypso.VERSION)
     sys.exit()
 
-# Fork if Cadaver is launched as daemon
+# Fork if Calypso is launched as daemon
 if options.daemon:
     if os.fork():
         sys.exit()
     sys.stdout = sys.stderr = open(os.devnull, "w")
 
 # Launch calendar server
-server_class = cadaver.HTTPSServer if options.ssl else cadaver.HTTPServer
+server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
 server = server_class(
-    (options.host, options.port), cadaver.CalendarHTTPHandler)
+    (options.host, options.port), calypso.CalendarHTTPHandler)
 server.serve_forever()

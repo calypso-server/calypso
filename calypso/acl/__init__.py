@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Cadaver Server - Calendar Server
+# This file is part of Calypso Server - Calendar Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -16,7 +16,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Cadaver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Users and rights management.
@@ -26,10 +26,10 @@ configuration.
 
 """
 
-from cadaver import config
+from calypso import config
 
 
 def load():
     """Load list of available ACL managers."""
-    module = __import__("cadaver.acl", fromlist=[config.get("acl", "type")])
+    module = __import__("calypso.acl", fromlist=[config.get("acl", "type")])
     return getattr(module, config.get("acl", "type"))
