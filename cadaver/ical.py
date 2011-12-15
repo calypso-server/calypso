@@ -4,6 +4,7 @@
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
+# Copyright © 2011 Keith Packard
 #
 # This library is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +37,6 @@ import vobject
 
 from cadaver import config
 
-
 FOLDER = os.path.expanduser(config.get("storage", "folder"))
     
 
@@ -47,33 +47,12 @@ def open(path, mode="r"):
     return codecs.open(path, mode, config.get("encoding", "stock"))
 # pylint: enable=W0622
 
-
-def serialize(headers=(), items=()):
-    """Return an iCal text corresponding to given ``headers`` and ``items``."""
-    lines = ["BEGIN:VCALENDAR"]
-    for part in (headers, items):
-        if part:
-            lines.append("\n".join(item.text for item in part))
-    lines.append("END:VCALENDAR\n")
-    return "\n".join(lines)
-
-def parse_time(line):
-    dtstart = line.rsplit(":",1)[1]
-    print ("dtstart %s " % dtstart)
-    try:
-        return time.strptime("%Y%m%dT%H%M%SZ", dtstart)
-    except ValueError:
-        try:
-            return time.strptime("%Y%m%dT%H%M%S", dtstart)
-        except ValueError:
-            return 0
-
 class Item(object):
     """Internal iCal item."""
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
-        print "New item %s = %s\n" % (name, text)
+        print ("New item name %s path %s\n" % (name, path))
 
         lines = text.splitlines(True)
         newlines=""
@@ -81,108 +60,77 @@ class Item(object):
             if line.find(":") >= 0:
                 newlines = newlines + line
 
-        text = newlines
+        try:
+            self.object = vobject.readOne(newlines)
+        except Exception:
+            self.object = None
+            print ("parse error\n")
 
-#        try:
-#            j = vobject.readOne(text)
-#            j.prettyPrint()
-#        except Exception:
-#            print ("parse error\n")
-
-        self.text = text
-        self._name = name
         self.path = path
 
-        # We must synchronize the name in the text and in the object.
-        # An item must have a name, determined in order by:
-        #
-        # - the ``name`` parameter
-        # - the ``X-CADAVER-NAME`` iCal property (for Events and Todos)
-        # - the ``UID`` iCal property (for Events and Todos)
-        # - the ``TZID`` iCal property (for Timezones)
-        if not self._name:
-            for line in self.text.splitlines():
-                if line.startswith("X-CADAVER-NAME:"):
-                    self._name = line.replace("X-CADAVER-NAME:", "").strip()
-                    break
-                elif line.startswith("TZID:"):
-                    self._name = line.replace("TZID:", "").strip()
-                    break
-                elif line.startswith("UID:"):
-                    self._name = line.replace("UID:", "").strip()
-                    # Do not break, a ``X-CADAVER-NAME`` can appear next
+        h = hashlib.sha1(self.object.serialize())
+        self.etag = h.hexdigest()
 
-#        self.dtstart = 0
-#        for line in self.text.splitlines():
-#            if line.startswith("DTSTART"):
-#                self.dtstart = parse_time(line)
-#                print ("dtstart %s -> %d" % (line, self.dtstart))
+        for child in self.object.getChildren():
+            if child.name == 'VEVENT' or child.name == 'VCARD':
+                if child.contents.has_key('uid'):
+                    if name:
+                        child.uid.value = name
+                    self.name = child.uid.value
+                else:
+                    if not name:
+                        name = self.etag
+                    child.add('UID').value = name
+                    self.name = name
+                break
+        print ("uid %s\n" % self.name)
 
-        h = hashlib.sha1(text.encode("utf-8"))
-        self._etag = h.hexdigest()
-        if not self._name:
-            self._name = self._etag
-
-        if "\nX-CADAVER-NAME:" in text:
-            for line in self.text.splitlines():
-                if line.startswith("X-CADAVER-NAME:"):
-                    self.text = self.text.replace(
-                        line, "X-CADAVER-NAME:%s" % self._name)
-        elif "\nUID:" in text:
-            self.text = self.text.replace(
-                "\nUID:", "\nX-CADAVER-NAME:%s\nUID:" % self._name)
-        else:
-            self.text = self.text.replace(
-                "\nSUMMARY:", "\nX-CADAVER-NAME:%s\nSUMMARY:" % self._name)
 
     @property
-    def etag(self):
-        """Item etag.
+    def text(self):
+        """Item text.
 
-        Etag is mainly used to know if an item has changed.
+        Text is the serialized form of the item.
 
         """
-        return '%s' % self._etag
+        return self.object.serialize()
 
     @property
-    def name(self):
-        """Item name.
+    def is_event(self):
+        """Item events
 
-        Name is mainly used to give an URL to the item.
+        Events are vevent objects within the item.
 
         """
-        return self._name
+        return self.object.contents.has_key('vevent')
+        
+    @property
+    def is_todo(self):
+        """Item todos
 
-class Header(Item):
-    """Internal header class."""
+        Todos are vtodo objects within the item.
 
+        """
+        return self.object.contents.has_key('vtodo')
 
-class Event(Item):
-    """Internal event class."""
-    tag = "VEVENT"
+    @property
+    def tzs(self):
+        """Item tzs
 
+        Todos are tzid objects within the item.
 
-class Todo(Item):
-    """Internal todo class."""
-    # This is not a TODO!
-    # pylint: disable=W0511
-    tag = "VTODO"
-    # pylint: enable=W0511
-
-
-class Timezone(Item):
-    """Internal timezone class."""
-    tag = "VTIMEZONE"
-
+        """
+        if self.object.contents.has_key('tzid'):
+            return self.object.tzid_list
+        return []
 
 class Calendar(object):
     """Internal calendar class."""
     tag = "VCALENDAR"
 
     def insert_text(self, text, path):
-        for new_item in self._parse(text, (Timezone, Event, Todo), None, path):
-            if new_item not in self.my_items:
-                self.my_items.append(new_item)
+        new_item = Item(text, None, path)
+        self.my_items.append(new_item)
             
     def insert_file(self, path):
         try:
@@ -297,7 +245,7 @@ class Calendar(object):
             print ("Execute git command %s" % command)
             os.system(command)
             
-    def create_file(self, items):
+    def create_file(self, item):
         # Create directory if necessary
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))
@@ -305,7 +253,7 @@ class Calendar(object):
         fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
         print ("Create item in file %s" % new_path)
         file = open(new_path, 'w')
-        file.write(serialize(headers=None, items=items))
+        file.write(item.text)
         file.close()
         os.close(fd)
         self.git_add(new_path)
@@ -320,11 +268,11 @@ class Calendar(object):
             print ("Failed to remove file %s" %item.path)
         self.scan_dir()
 
-    def rewrite_file(self, items, path):
+    def rewrite_file(self, item, path):
         fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
         print ("Rewrite item in file %s (temp %s)" % (path, new_path))
         file = open(new_path, 'w')
-        file.write(serialize(headers=None, items=items))
+        file.write(item.text)
         file.close()
         os.close(fd)
         os.rename(new_path, path)
@@ -334,7 +282,9 @@ class Calendar(object):
         
     def get_item(self, name):
         """Get calendar item called ``name``."""
+        print ("get_item %s\n" % name)
         for item in self.my_items:
+            print ("item.name %s\n" % item.name)
             if item.name == name:
                 return item
         return None
@@ -362,11 +312,9 @@ class Calendar(object):
 
         """
 
-        new_items = self._parse(text, (Timezone, Event, Todo), name)
-        for new_item in new_items:
-            if new_item.name not in (item.name for item in self.my_items):
-                self.create_file(new_items)
-                break
+        new_item = Item(text, name, None)
+        if new_item.uid not in (item.uid for item in self.my_items):
+                self.create_file(new_item)
 
     def remove(self, name):
         """Remove object named ``name`` from calendar."""
@@ -387,9 +335,9 @@ class Calendar(object):
             if old_item.name == name:
                 path = old_item.path
                 break
-        new_items = self._parse(text, (Timezone, Event, Todo), name)
+        new_item = Item(text, name, path)
         if path is not None:
-            self.rewrite_file(new_items, path)
+            self.rewrite_file(new_item, path)
         else:
             self.remove(name)
             self.append(name, text)
@@ -412,7 +360,10 @@ class Calendar(object):
     @property
     def etag(self):
         """Etag from calendar."""
-        return '%s' % hash(self.text)
+        h = hashlib.sha1()
+        for item in self.my_items:
+            h.update(item.etag)
+        return h.hexdigest()
 
     @property
     def name(self):
@@ -425,18 +376,18 @@ class Calendar(object):
         self.scan_dir()
         headers = []
 
-        headers.append(Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
-        headers.append(Header("VERSION:2.0"))
+#        headers.append(Item("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
+#        headers.append(Item("VERSION:2.0"))
 
-        return serialize(headers=headers, items=self.my_items)
+        return ""
 
     @property
     def headers(self):
         """Find headers items in calendar."""
         header_lines = []
 
-        header_lines.append(Header("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
-        header_lines.append(Header("VERSION:2.0"))
+#        header_lines.append(Item("PRODID:-//Cadaver//NONSGML Cadaver Server//EN"))
+#        header_lines.append(Item("VERSION:2.0"))
 
         return header_lines
 
@@ -445,36 +396,6 @@ class Calendar(object):
         """Get list of all items in calendar."""
         self.scan_dir()
         return self.my_items
-
-    @property
-    def events(self):
-        """Get list of ``Event`` items in calendar."""
-        self.scan_dir()
-        events=[]
-        for item in self.my_items:
-            if item.__class__ == Event:
-                events.append(item)
-        return events
-
-    @property
-    def todos(self):
-        """Get list of ``Todo`` items in calendar."""
-        self.scan_dir()
-        events=[]
-        for item in self.my_items:
-            if item.__class__ == Todo:
-                events.append(item)
-        return events
-
-    @property
-    def timezones(self):
-        """Get list of ``Timezone`` items in calendar."""
-        self.scan_dir()
-        events=[]
-        for item in self.my_items:
-            if item.__class__ == Timezone and not item.name in (event.name for event in events):
-                events.append(item)
-        return events
 
     @property
     def last_modified(self):

@@ -29,6 +29,8 @@ in them for XML requests (all but PUT).
 
 import xml.etree.ElementTree as ET
 
+import urllib
+
 from cadaver import client, config, ical
 
 
@@ -51,8 +53,7 @@ def _response(code):
 def name_from_path(path):
     """Return Cadaver item name from ``path``."""
     path_parts = path.strip("/").split("/")
-    return path_parts[-1] if len(path_parts) > 2 else None
-
+    return urllib.unquote(path_parts[-1]) if len(path_parts) > 2 else None
 
 def delete(path, calendar):
     """Read and answer DELETE requests.
@@ -101,7 +102,7 @@ def propfind(path, xml_request, calendar, depth):
         else:
             # depth is 1, infinity or not specified
             # we limit ourselves to depth == 1
-            items = [calendar] + calendar.events + calendar.todos
+            items = [calendar] + calendar.items
     else:
         items = []
 
@@ -182,6 +183,13 @@ def put(path, ical_request, calendar):
         calendar.append(name, ical_request)
 
 
+def match(item, filter):
+    if not filter:
+        return True
+    for fe in filter.iter():
+        print ("filter element %s\n" % fe)
+    
+
 def report(path, xml_request, calendar):
     """Read and answer REPORT requests.
 
@@ -194,6 +202,10 @@ def report(path, xml_request, calendar):
     prop_element = root.find(_tag("D", "prop"))
     prop_list = prop_element.getchildren()
     props = [prop.tag for prop in prop_list]
+
+    filter_element = root.find(_tag("C", "filter"))
+    if filter_element:
+        print ("filter: %s\n" % filter_element.getchildren())
 
     if calendar:
         if root.tag == _tag("C", "calendar-multiget"):
@@ -218,8 +230,9 @@ def report(path, xml_request, calendar):
         else:
             # Reference is a calendar
             path = hreference
-            items = calendar.events + calendar.todos
+            items = calendar.items
 
+        
         for item in items:
             response = ET.Element(_tag("D", "response"))
             multistatus.append(response)
@@ -240,9 +253,7 @@ def report(path, xml_request, calendar):
                 if tag == _tag("D", "getetag"):
                     element.text = item.etag
                 elif tag == _tag("C", "calendar-data"):
-                    if isinstance(item, (ical.Event, ical.Todo)):
-                        items = calendar.get_full(item)
-                        element.text = ical.serialize(calendar.headers, items)
+                    element.text = item.text
                 prop.append(element)
 
             status = ET.Element(_tag("D", "status"))

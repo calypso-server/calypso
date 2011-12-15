@@ -208,13 +208,12 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         """Manage HEAD request."""
         item_name = xmlutils.name_from_path(self.path)
+        print ("get %s" % item_name)
         if item_name:
             # Get calendar item
             item = self._calendar.get_item(item_name)
             if item:
-                items = self._calendar.get_full(item)
-                answer_text = ical.serialize(
-                    headers=self._calendar.headers, items=items)
+                answer_text = item.text
                 etag = item.etag
             else:
                 self._answer = None
@@ -226,6 +225,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             etag = self._calendar.etag
 
         self._answer = answer_text.encode(self._encoding)
+        print ("answer %s" % self._answer)
         self.send_response(client.OK)
         self.send_header("Content-Length", len(self._answer))
         self.send_header("Content-Type", "text/calendar")
@@ -267,6 +267,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PROPFIND(self):
         """Manage PROPFIND request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+        print ("propfind %s" % xml_request)
         self._answer = xmlutils.propfind(
             self.path, xml_request, self._calendar,
             self.headers.get("depth", "infinity"))
@@ -276,7 +277,15 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", len(self._answer))
         self.send_header("Content-Type", "text/xml")
         self.end_headers()
+        print ("answer %s" % self._answer)
         self.wfile.write(self._answer)
+
+    def do_SEARCH(self):
+        """Manage SEARCH request."""
+        xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+        print ("search %s" % xml_request)
+        self.send_response(client.NO_CONTENT)
+        self.end_headers()
 
     @check_rights
     def do_PUT(self):
@@ -286,7 +295,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         if len(items) == 0:
             etag = 0
         else:
-            etag = self.headers.get("If-Match", items[0].etag)
+            etag = self.headers.get("If-Match", items[0].etag).strip('"')
         if (len(items) == 0 and not self.headers.get("If-Match")) or \
                 (len(items) > 0 and etag in (i.etag for i in items)):
             # PUT allowed in 3 cases

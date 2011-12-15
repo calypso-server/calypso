@@ -40,7 +40,7 @@ except ImportError:
 INITIAL_CONFIG = {
     "server": {
         "host": "",
-        "port": "5232",
+        "port": "5233",
         "daemon": "False",
         "ssl": "False",
         "certificate": "/etc/apache2/ssl/server.crt",
