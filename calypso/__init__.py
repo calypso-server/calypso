@@ -224,7 +224,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             answer_text = self._calendar.text
             etag = self._calendar.etag
 
-        self._answer = answer_text.encode(self._encoding)
+        self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
         print ("answer %s" % self._answer)
         self.send_response(client.OK)
         self.send_header("Content-Length", len(self._answer))

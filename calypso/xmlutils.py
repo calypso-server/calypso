@@ -28,6 +28,7 @@ in them for XML requests (all but PUT).
 """
 
 import xml.etree.ElementTree as ET
+import time
 
 import urllib
 
@@ -162,6 +163,10 @@ def propfind(path, xml_request, calendar, depth):
                 privilege = ET.Element(_tag("D", "privilege"))
                 privilege.append(ET.Element(_tag("D", "all")))
                 element.append(privilege)
+            elif tag == _tag("D", "getcontentlength"):
+                element.text = item.length
+            elif tag == _tag("D", "getlastmodified"):
+                element.text = time.strftime("%a, %d %b %Y %H:%M:%S +0000", item.last_modified)
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))

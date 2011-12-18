@@ -47,24 +47,31 @@ def open(path, mode="r"):
     return codecs.open(path, mode, config.get("encoding", "stock"))
 # pylint: enable=W0622
 
+def find_vobject_value(vobject, name):
+
+    if vobject.name == name:
+        return vobject.value
+
+    for child in vobject.getChildren():
+        value = find_vobject_value(child, name)
+        if value:
+            return value
+    return None
+
 class Item(object):
-    """Internal iCal item."""
+
+    """Internal item. Wraps a vObject"""
+
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
         print ("New item name %s path %s\n" % (name, path))
 
-        lines = text.splitlines(True)
-        newlines=""
-        for line in lines:
-            if line.startswith(" ") or line.find(":") >= 0:
-                newlines = newlines + line
-
         try:
-            self.object = vobject.readOne(newlines)
+            self.object = vobject.readOne(text)
         except Exception:
-            self.object = None
             print ("parse error\n")
+            return None
 
         self.path = path
 
@@ -74,7 +81,7 @@ class Item(object):
                     if child.name == 'VEVENT' or child.name == 'VCARD':
                         if not child.contents.has_key('uid'):
                             if not name:
-                                h = hashlib.sha1(self.object.serialize())
+                                h = hashlib.sha1(text)
                                 name = h.hexdigest()
                             child.add('UID').value = name
                         name = child.uid.value
@@ -86,8 +93,11 @@ class Item(object):
 
         self.name = self.object.x_calypso_name.value
             
-        h = hashlib.sha1(self.object.serialize())
-        self.etag = h.hexdigest()
+        try:
+            self.etag = hashlib.sha1(self.object.serialize()).hexdigest()
+        except Exception:
+            print ("serialize error\n")
+            return None
 
         print ("name %s\n" % self.name)
 
@@ -129,13 +139,25 @@ class Item(object):
             return self.object.tzid_list
         return []
 
+    @property
+    def length(self):
+        return "%d" % len(self.text)
+
+    @property
+    def last_modified(self):
+        value = find_vobject_value(self.object, "LAST-MODIFIED")
+        if value:
+            return value.utctimetuple()
+        return time.gmtime()
+        
 class Calendar(object):
     """Internal calendar class."""
     tag = "VCALENDAR"
 
     def insert_text(self, text, path):
         new_item = Item(text, None, path)
-        self.my_items.append(new_item)
+        if new_item:
+            self.my_items.append(new_item)
             
     def insert_file(self, path):
         try:
@@ -318,6 +340,8 @@ class Calendar(object):
         """
 
         new_item = Item(text, name, None)
+        if not new_item:
+            return
         if new_item.name not in (item.name for item in self.my_items):
                 self.create_file(new_item)
 
@@ -341,6 +365,9 @@ class Calendar(object):
                 path = old_item.path
                 break
         new_item = Item(text, name, path)
+        if not new_item:
+            return
+
         if path is not None:
             self.rewrite_file(new_item, path)
         else:
@@ -379,22 +406,15 @@ class Calendar(object):
     def text(self):
         """Calendar as plain text."""
         self.scan_dir()
-        headers = []
-
-#        headers.append(Item("PRODID:-//Calypso//NONSGML Calypso Server//EN"))
-#        headers.append(Item("VERSION:2.0"))
-
-        return ""
+        _text = ""
+        for item in self.my_items:
+            _text = _text + item.text
+        return _text
 
     @property
     def headers(self):
         """Find headers items in calendar."""
-        header_lines = []
-
-#        header_lines.append(Item("PRODID:-//Calypso//NONSGML Calypso Server//EN"))
-#        header_lines.append(Item("VERSION:2.0"))
-
-        return header_lines
+        return []
 
     @property
     def items(self):
@@ -410,5 +430,8 @@ class Calendar(object):
 
         """
         self.scan_dir()
-        modification_time = time.gmtime(self.mtime)
-        return time.strftime("%a, %d %b %Y %H:%M:%S +0000", modification_time)
+        return time.gmtime(self.mtime)
+
+    @property
+    def length(self):
+        return "%d" % len(self.text)
