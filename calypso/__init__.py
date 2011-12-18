@@ -201,6 +201,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     # Naming methods ``do_*`` is OK here
     # pylint: disable=C0103
 
+    @check_rights
     def do_GET(self):
         """Manage GET request."""
         self.do_HEAD()
@@ -272,6 +273,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_header("DAV", "1, calendar-access")
         self.end_headers()
 
+    @check_rights
     def do_PROPFIND(self):
         """Manage PROPFIND request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
@@ -288,6 +290,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         print ("answer %s" % self._answer)
         self.wfile.write(self._answer)
 
+    @check_rights
     def do_SEARCH(self):
         """Manage SEARCH request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
