@@ -29,6 +29,11 @@ in them for XML requests (all but PUT).
 
 import xml.etree.ElementTree as ET
 import time
+import dateutil
+import dateutil.parser
+import dateutil.rrule
+import dateutil.tz
+import datetime
 
 import urllib
 
@@ -188,12 +193,81 @@ def put(path, ical_request, calendar):
         calendar.append(name, ical_request)
 
 
-def match(item, filter):
-    if not filter:
+def match_filter_element(vobject, fe):
+    if fe.tag == _tag("C", "comp-filter"):
+        comp = fe.get("name")
+        if comp:
+            if comp == vobject.name:
+                hassub = False
+                submatch = False
+                for fc in fe.getchildren():
+                    if match_filter_element(vobject, fc):
+                        submatch = True
+                        break
+                    for vc in vobject.getChildren():
+                        hassub = True
+                        if match_filter_element (vc, fc):
+                            submatch = True
+                            break
+                    if submatch:
+                        break
+                if not hassub or submatch:
+                    return True
+        return False
+    elif fe.tag == _tag("C", "time-range"):
+        try:
+            rruleset = vobject.rruleset
+        except AttributeError:
+            return False
+        start = fe.get("start")
+        end = fe.get("end")
+        if rruleset is None:
+            rruleset = dateutil.rrule.rruleset()
+            dtstart = vobject.dtstart.value
+            try:
+                dtstart = datetime.datetime.combine(dtstart, datetime.time())
+                print ("added time to %s" % dtstart)
+            except Exception:
+                print ("no need to add time to %s" % dtstart)
+            if dtstart.tzinfo is None:
+                dtstart = dtstart.replace(tzinfo = dateutil.tz.tzlocal())
+            else:
+                print ("%s has timezone %s" % (dtstart, dtstart.tzinfo))
+            rruleset.rdate(dtstart)
+        start_datetime = dateutil.parser.parse(start)
+        if start_datetime.tzinfo is None:
+            start_datetime = start_datetime.replace(tzinfo = dateutil.tz.tzlocal())
+        end_datetime = dateutil.parser.parse(end)
+        if end_datetime.tzinfo is None:
+            end_datetime = end_datetime.replace(tzinfo = dateutil.tz.tzlocal())
+        try:
+            if rruleset.between(start_datetime, end_datetime, True):
+                print ("vevent matches time range")
+                return True
+        except TypeError:
+            start_datetime = start_datetime.replace(tzinfo = None)
+            end_datetime = end_datetime.replace(tzinfo = None)
+            try:
+                if rruleset.between(start_datetime, end_datetime, True):
+                    print ("vevent matches naive time range")
+                    return True
+            except TypeError:
+                print ("cannot compare times")
+                return True
+        print ("vevent does not match time range")
+        return False
+    return True
+
+def match_filter(item, filter):
+    if filter is None:
+        print ("no filter\n")
         return True
-    for fe in filter.iter():
-        print ("filter element %s\n" % fe)
-    
+    if filter.tag != _tag("C", "filter"):
+        return True
+    for fe in filter.getchildren():
+        if match_filter_element(item.object, fe):
+            print ("matches: %s" % item.name)
+            return True
 
 def report(path, xml_request, calendar):
     """Read and answer REPORT requests.
@@ -209,8 +283,6 @@ def report(path, xml_request, calendar):
     props = [prop.tag for prop in prop_list]
 
     filter_element = root.find(_tag("C", "filter"))
-    if filter_element:
-        print ("filter: %s\n" % filter_element.getchildren())
 
     if calendar:
         if root.tag == _tag("C", "calendar-multiget"):
@@ -239,6 +311,10 @@ def report(path, xml_request, calendar):
 
         
         for item in items:
+            if not match_filter(item, filter_element):
+                print ("skipping item %s\n" % item.name)
+                continue
+
             response = ET.Element(_tag("D", "response"))
             multistatus.append(response)
 
