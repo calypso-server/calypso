@@ -99,7 +99,9 @@ class Item(object):
             print ("serialize error\n")
             return None
 
-        print ("name %s\n" % self.name)
+        self.tag = self.object.name
+
+        print ("name %s tag %s" % (self.name, self.tag))
 
     @property
     def text(self):
@@ -149,6 +151,9 @@ class Item(object):
         if value:
             return value.utctimetuple()
         return time.gmtime()
+
+    def getChildren(self):
+        return []
         
 class Calendar(object):
     """Internal calendar class."""
@@ -211,45 +216,6 @@ class Calendar(object):
         self.my_items = []
         self.mtime = 0
         self.scan_dir()
-
-    @staticmethod
-    def _parse(text, item_types, name=None, path=None):
-        """Find items with type in ``item_types`` in ``text`` text.
-
-        If ``name`` is given, give this name to new items in ``text``.
-
-        Return a list of items.
-
-        """
-        item_tags = {}
-        for item_type in item_types:
-            item_tags[item_type.tag] = item_type
-
-        items = []
-
-        jtext = text.replace("\n ", "")
-
-        lines = jtext.splitlines()
-        in_item = False
-
-        for line in lines:
-            if line.startswith("BEGIN:") and not in_item:
-                item_tag = line.replace("BEGIN:", "").strip()
-                if item_tag in item_tags:
-                    in_item = True
-                    item_lines = []
-
-            if in_item:
-                item_lines.append(line)
-                if line.startswith("END:%s" % item_tag):
-                    in_item = False
-                    item_type = item_tags[item_tag]
-                    item_text = "\n".join(item_lines)
-                    item_name = None if item_tag == "VTIMEZONE" else name
-                    item = item_type(item_text, item_name, path)
-                    items.append(item)
-
-        return items
 
     def has_git(self):
         return os.path.exists(os.path.join(self.path, ".git"))
@@ -435,3 +401,6 @@ class Calendar(object):
     @property
     def length(self):
         return "%d" % len(self.text)
+
+    def getChildren(self):
+        return my_items;
