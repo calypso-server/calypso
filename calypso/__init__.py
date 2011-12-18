@@ -271,6 +271,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             "Allow", "DELETE, HEAD, GET, MKCALENDAR, "
             "OPTIONS, PROPFIND, PUT, REPORT")
         self.send_header("DAV", "1, calendar-access")
+        self.send_header("DAV", "1, addressbook")
         self.end_headers()
 
     @check_rights

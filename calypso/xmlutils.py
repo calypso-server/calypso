@@ -138,7 +138,10 @@ def propfind(path, xml_request, calendar, depth):
             elif tag == _tag("D", "owner"):
                 element.text = calendar.owner
             elif tag == _tag("D", "getcontenttype"):
-                element.text = "text/calendar"
+                if item.tag == 'VCARD':
+                    element.text = "text/vcard"
+                else:
+                    element.text = "text/calendar"
             elif tag == _tag("CS", "getctag") and is_calendar:
                 element.text = item.etag
             elif tag == _tag("D", "getetag"):

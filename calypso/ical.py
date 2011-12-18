@@ -77,15 +77,20 @@ class Item(object):
 
         if not self.object.contents.has_key("x_calypso_name"):
             if not name:
-                for child in self.object.getChildren():
-                    if child.name == 'VEVENT' or child.name == 'VCARD':
-                        if not child.contents.has_key('uid'):
-                            if not name:
-                                h = hashlib.sha1(text)
-                                name = h.hexdigest()
-                            child.add('UID').value = name
-                        name = child.uid.value
-                        break
+                if self.object.name == 'VCARD' or self.object.name == 'VEVENT':
+                    if not self.object.contents.has_key('uid'):
+                        self.object.add('UID').value = hashlib.sha1(text).hexdigest()
+                    name = self.object.uid.value
+                else:
+                    for child in self.object.getChildren():
+                        if child.name == 'VEVENT' or child.name == 'VCARD':
+                            if not child.contents.has_key('uid'):
+                                child.add('UID').value = hashlib.sha1(text).hexdigest()
+                            name = child.uid.value
+                            break
+                    if not name:
+                        name = hashlib.sha1(text).hexdigest()
+                
             self.object.add("X-CALYPSO-NAME").value = name
             print ("set calypso name to %s %s" % (self.object.x_calypso_name.value, name))
         else:
@@ -95,8 +100,8 @@ class Item(object):
             
         try:
             self.etag = hashlib.sha1(self.object.serialize()).hexdigest()
-        except Exception:
-            print ("serialize error\n")
+        except Exception, ex:
+            print "serialize error %s" % ex
             return None
 
         self.tag = self.object.name
@@ -168,6 +173,7 @@ class Calendar(object):
         try:
             print ("Insert file %s" % path)
             text = open(path).read()
+            text = text.encode(encoding='UTF-8', errors='replace')
             self.insert_text(text, path)
         except IOError:
             return
@@ -211,7 +217,7 @@ class Calendar(object):
         self.encoding = "utf-8"
         self.owner = path.split("/")[0]
         self.path = os.path.join(FOLDER, path.replace("/", os.path.sep))
-        self.pattern = os.path.join(self.path, "*.ics")
+        self.pattern = os.path.join(self.path, "*")
         self.files = []
         self.my_items = []
         self.mtime = 0

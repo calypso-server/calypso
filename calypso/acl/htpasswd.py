@@ -56,6 +56,7 @@ def _sha1(hash_value, password):
 
 def has_right(owner, user, password):
     """Check if ``user``/``password`` couple is valid."""
+    print "checking access for user %s" % user
     for line in open(FILENAME).readlines():
         if line.strip():
             login, hash_value = line.strip().split(":")
