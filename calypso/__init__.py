@@ -121,6 +121,9 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
 
+    def address_string(self):
+        return str(self.client_address[0])
+
     def handle_one_request(self):
         """Handle a single HTTP request.
 
