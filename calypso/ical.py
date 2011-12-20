@@ -236,41 +236,50 @@ class Calendar(object):
             command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "modified file")
             os.system(command)
             
+    def write_file(self, item):
+        fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
+        file = os.fdopen(fd, 'w')
+        file.write(item.text)
+        file.close()
+        return path
+
     def create_file(self, item):
         # Create directory if necessary
         print "Add %s" % item.name
         if not os.path.exists(os.path.dirname(self.path)):
-            os.makedirs(os.path.dirname(self.path))
+            try:
+                os.makedirs(os.path.dirname(self.path))
+            except OSError, ose:
+                print "Failed to make calendar directory %s: %s" % (self.path, ose)
+                return
 
-        fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        print ("Create item in file %s" % new_path)
-        file = open(new_path, 'w')
-        file.write(item.text)
-        file.close()
-        os.close(fd)
-        self.git_add(new_path)
-        self.scan_dir()
+        try:
+            path = self.write_file(item)
+            self.scan_file(path)
+            self.git_add(path)
+            self.scan_dir()
+        except Exception, ex:
+            print "Failed to create %s: %s" % (path % ex)
 
     def destroy_file(self, item):
         print "Remove %s" % item.name
         try:
             os.unlink(item.path)
             self.git_rm(item.path)
-        except OSError:
-            print ("Failed to remove file %s" %item.path)
-        self.scan_dir()
+            self.scan_dir()
+        except Exception, ex:
+            print "Failed to remove %s: %s" % (item.path, ex)
 
     def rewrite_file(self, item, path):
-        fd, new_path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        print ("Rewrite item in file %s (temp %s)" % (path, new_path))
-        file = open(new_path, 'w')
-        file.write(item.text)
-        file.close()
-        os.close(fd)
-        os.rename(new_path, path)
-        self.git_change(path)
-        self.scan_file(path)
-        self.scan_dir()
+        print "Change %s" % item.name
+        try:
+            new_path = self.write_file(item)
+            os.rename(new_path, path)
+            self.scan_file(path)
+            self.git_change(path)
+            self.scan_dir()
+        except Exception, ex:
+            print "Failed to rewrite %s: %s" % (path, ex)
         
     def get_item(self, name):
         """Get calendar item called ``name``."""

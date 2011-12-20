@@ -325,7 +325,7 @@ def report(path, xml_request, calendar):
                 if tag == _tag("D", "getetag"):
                     element.text = item.etag
                 elif tag == _tag("C", "calendar-data"):
-                    element.text = item.text
+                    element.text = item.text.decode('utf-8', errors='replace')
                 prop.append(element)
 
             status = ET.Element(_tag("D", "status"))
@@ -333,5 +333,5 @@ def report(path, xml_request, calendar):
             propstat.append(status)
 
     reply = ET.tostring(multistatus, config.get("encoding", "request"))
-    # print ("Report returns %s" % reply)
+        
     return reply
