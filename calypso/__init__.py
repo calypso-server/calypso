@@ -134,7 +134,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         """
         try:
             self.raw_requestline = self.rfile.readline(4000000)
-            print ("Raw line %s" % self.raw_requestline)
             if len(self.raw_requestline) > 65536:
                 self.requestline = ''
                 self.request_version = ''
@@ -212,7 +211,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_HEAD(self):
         """Manage HEAD request."""
         item_name = xmlutils.name_from_path(self.path)
-        print ("get %s" % item_name)
         if item_name:
             # Get calendar item
             item = self._calendar.get_item(item_name)
@@ -234,7 +232,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             answer_text = answer_text.decode(errors="ignore")
             self._answer = answer_text.encode(self._encoding,"ignore")
             
-        print ("answer %s" % self._answer)
         self.send_response(client.OK)
         self.send_header("Content-Length", len(self._answer))
         self.send_header("Content-Type", "text/calendar")
@@ -278,7 +275,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PROPFIND(self):
         """Manage PROPFIND request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-        print ("propfind %s" % xml_request)
         self._answer = xmlutils.propfind(
             self.path, xml_request, self._calendar,
             self.headers.get("depth", "infinity"))
@@ -288,14 +284,12 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", len(self._answer))
         self.send_header("Content-Type", "text/xml")
         self.end_headers()
-        print ("answer %s" % self._answer)
         self.wfile.write(self._answer)
 
     @check_rights
     def do_SEARCH(self):
         """Manage SEARCH request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-        print ("search %s" % xml_request)
         self.send_response(client.NO_CONTENT)
         self.end_headers()
 
@@ -316,21 +310,12 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             # Case 3: Item and no Etag precondition: Force modifying item
             ical_request = self._decode(
                 self.rfile.read(int(self.headers["Content-Length"])))
-            print ("put %s\n" % ical_request)
             xmlutils.put(self.path, ical_request, self._calendar)
             etag = self._calendar.get_item(item_name).etag
 
             self.send_response(client.CREATED)
             self.send_header("ETag", etag)
             self.end_headers()
-        else:
-            if len(items) == 0:
-                print ("Missing item %s" % item_name)
-            else:
-                print ("Mismatch etag")
-                print ("Request %s %s" % (item_name, etag))
-                for i in items:
-                    print ("Exist %s %s" % (i.name, i.etag))
 
             # PUT rejected in all other cases
             self.send_response(client.PRECONDITION_FAILED)
@@ -339,12 +324,10 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_REPORT(self):
         """Manage REPORT request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-        print ("report %s" % xml_request)
         self._answer = xmlutils.report(self.path, xml_request, self._calendar)
         self.send_response(client.MULTI_STATUS)
         self.send_header("Content-Length", len(self._answer))
         self.end_headers()
-        print ("answer %s" % self._answer)
         self.wfile.write(self._answer)
 
     # pylint: enable=C0103

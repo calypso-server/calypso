@@ -70,7 +70,7 @@ class Item(object):
         try:
             self.object = vobject.readOne(text)
         except Exception:
-            print ("parse error\n")
+            print "Parse error in %s %s\n" % (name, path)
             return None
 
         self.path = path
@@ -92,21 +92,16 @@ class Item(object):
                         name = hashlib.sha1(text).hexdigest()
                 
             self.object.add("X-CALYPSO-NAME").value = name
-            print ("set calypso name to %s %s" % (self.object.x_calypso_name.value, name))
-        else:
-            print ("object already has calypso name" % self.object.x_calypso_name.value)
 
         self.name = self.object.x_calypso_name.value
             
         try:
             self.etag = hashlib.sha1(self.object.serialize()).hexdigest()
         except Exception, ex:
-            print "serialize error %s" % ex
+            print "Serialize error in %s %s" % (self.path, ex)
             return None
 
         self.tag = self.object.name
-
-        print ("name %s tag %s" % (self.name, self.tag))
 
     @property
     def text(self):
@@ -171,7 +166,6 @@ class Calendar(object):
             
     def insert_file(self, path):
         try:
-            print ("Insert file %s" % path)
             text = open(path).read()
             text = text.encode(encoding='UTF-8', errors='replace')
             self.insert_text(text, path)
@@ -179,7 +173,6 @@ class Calendar(object):
             return
 
     def remove_file(self, path):
-        print ("Remove file %s" % path)
         old_items=[]
         for old_item in self.my_items:
             if old_item.path == path:
@@ -189,7 +182,6 @@ class Calendar(object):
             self.my_items.remove(old_item)
         
     def scan_file(self, path):
-        print ("Rescan file %s" % path)
         self.remove_file(path)
         self.insert_file(path)
 
@@ -229,23 +221,21 @@ class Calendar(object):
     def git_add(self, path):
         if self.has_git():
             command="cd %s && git add %s && git commit -m'Add %s'" % (self.path, os.path.basename(path), "new file")
-            print ("Execute git command %s" % command)
             os.system(command)
     
     def git_rm(self, path):
         if self.has_git():
             command="cd %s && git rm %s && git commit -m'Remove %s'" % (self.path, os.path.basename(path), "old file")
-            print ("Execute git command %s" % command)
             os.system(command)
 
     def git_change(self, path):
         if self.has_git():
             command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "modified file")
-            print ("Execute git command %s" % command)
             os.system(command)
             
     def create_file(self, item):
         # Create directory if necessary
+        print "Add %s" % item.name
         if not os.path.exists(os.path.dirname(self.path)):
             os.makedirs(os.path.dirname(self.path))
 
@@ -259,7 +249,7 @@ class Calendar(object):
         self.scan_dir()
 
     def destroy_file(self, item):
-        print ("Remove item in file %s" % item.path)
+        print "Remove %s" % item.name
         try:
             os.unlink(item.path)
             self.git_rm(item.path)
@@ -281,9 +271,7 @@ class Calendar(object):
         
     def get_item(self, name):
         """Get calendar item called ``name``."""
-        print ("get_item %s\n" % name)
         for item in self.my_items:
-            print ("item.name %s\n" % item.name)
             if item.name == name:
                 return item
         return None
@@ -323,12 +311,6 @@ class Calendar(object):
             if old_item.name == name:
                 self.destroy_file(old_item)
                 
-#        todos = [todo for todo in self.todos if todo.name != name]
-#        events = [event for event in self.events if event.name != name]
-
-#        items = self.timezones + todos + events
-#        self.write(items=items)
-
     def replace(self, name, text):
         """Replace content by ``text`` in objet named ``name`` in calendar."""
         path=None

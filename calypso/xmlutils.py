@@ -187,7 +187,6 @@ def propfind(path, xml_request, calendar, depth):
 def put(path, ical_request, calendar):
     """Read PUT requests."""
     name = name_from_path(path)
-    print ("put %s" % name)
     if name in (item.name for item in calendar.items):
         # PUT is modifying an existing item
         calendar.replace(name, ical_request)
@@ -229,13 +228,10 @@ def match_filter_element(vobject, fe):
             dtstart = vobject.dtstart.value
             try:
                 dtstart = datetime.datetime.combine(dtstart, datetime.time())
-                print ("added time to %s" % dtstart)
             except Exception:
-                print ("no need to add time to %s" % dtstart)
+                0
             if dtstart.tzinfo is None:
                 dtstart = dtstart.replace(tzinfo = dateutil.tz.tzlocal())
-            else:
-                print ("%s has timezone %s" % (dtstart, dtstart.tzinfo))
             rruleset.rdate(dtstart)
         start_datetime = dateutil.parser.parse(start)
         if start_datetime.tzinfo is None:
@@ -245,31 +241,25 @@ def match_filter_element(vobject, fe):
             end_datetime = end_datetime.replace(tzinfo = dateutil.tz.tzlocal())
         try:
             if rruleset.between(start_datetime, end_datetime, True):
-                print ("vevent matches time range")
                 return True
         except TypeError:
             start_datetime = start_datetime.replace(tzinfo = None)
             end_datetime = end_datetime.replace(tzinfo = None)
             try:
                 if rruleset.between(start_datetime, end_datetime, True):
-                    print ("vevent matches naive time range")
                     return True
             except TypeError:
-                print ("cannot compare times")
                 return True
-        print ("vevent does not match time range")
         return False
     return True
 
 def match_filter(item, filter):
     if filter is None:
-        print ("no filter\n")
         return True
     if filter.tag != _tag("C", "filter"):
         return True
     for fe in filter.getchildren():
         if match_filter_element(item.object, fe):
-            print ("matches: %s" % item.name)
             return True
 
 def report(path, xml_request, calendar):
@@ -315,13 +305,11 @@ def report(path, xml_request, calendar):
         
         for item in items:
             if not match_filter(item, filter_element):
-                print ("skipping item %s\n" % item.name)
                 continue
 
             response = ET.Element(_tag("D", "response"))
             multistatus.append(response)
 
-#            print ("Returning from path %s" % item.path)
             href = ET.Element(_tag("D", "href"))
             href.text = path + item.name
             response.append(href)
