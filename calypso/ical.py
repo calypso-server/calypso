@@ -47,6 +47,11 @@ def open(path, mode="r"):
     return codecs.open(path, mode, config.get("encoding", "stock"))
 # pylint: enable=W0622
 
+
+#
+# Recursive search for 'name' within 'vobject'
+#
+
 def find_vobject_value(vobject, name):
 
     if vobject.name == name:
@@ -101,8 +106,6 @@ class Item(object):
             print "Serialize error in %s %s" % (self.path, ex)
             return None
 
-        self.tag = self.object.name
-
     @property
     def text(self):
         """Item text.
@@ -117,35 +120,6 @@ class Item(object):
             raise ue
 
     @property
-    def is_event(self):
-        """Item events
-
-        Events are vevent objects within the item.
-
-        """
-        return self.object.contents.has_key('vevent')
-        
-    @property
-    def is_todo(self):
-        """Item todos
-
-        Todos are vtodo objects within the item.
-
-        """
-        return self.object.contents.has_key('vtodo')
-
-    @property
-    def tzs(self):
-        """Item tzs
-
-        Todos are tzid objects within the item.
-
-        """
-        if self.object.contents.has_key('tzid'):
-            return self.object.tzid_list
-        return []
-
-    @property
     def length(self):
         return "%d" % len(self.text)
 
@@ -156,22 +130,15 @@ class Item(object):
             return value.utctimetuple()
         return time.gmtime()
 
-    def getChildren(self):
-        return []
-        
 class Calendar(object):
     """Internal calendar class."""
-    tag = "VCALENDAR"
 
-    def insert_text(self, text, path):
-        new_item = Item(text, None, path)
-        if new_item:
-            self.my_items.append(new_item)
-            
     def insert_file(self, path):
         try:
             text = open(path).read()
-            self.insert_text(text, path)
+            item = Item(text, None, path)
+            if item:
+                self.my_items.append(item)
         except IOError:
             return
 
@@ -288,14 +255,6 @@ class Calendar(object):
                 return item
         return None
 
-    def get_full(self, base):
-        """Get everything that is stored with ``item``."""
-        items=[]
-        for item in self.my_items:
-            if item.path == base.path:
-                items.append(item)
-        return items
-        
     def get_items(self, name):
         """Get calendar items called ``name``."""
         items=[]
@@ -401,6 +360,3 @@ class Calendar(object):
     @property
     def length(self):
         return "%d" % len(self.text)
-
-    def getChildren(self):
-        return my_items;
