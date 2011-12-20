@@ -65,7 +65,7 @@ class Item(object):
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
-        print ("New item name %s path %s\n" % (name, path))
+        text = text.encode(encoding='UTF-8', errors='replace')
 
         try:
             self.object = vobject.readOne(text)
@@ -110,7 +110,11 @@ class Item(object):
         Text is the serialized form of the item.
 
         """
-        return self.object.serialize()
+        try:
+            return self.object.serialize()
+        except UnicodeDecodeError, ue:
+            print "Unicode decode error in %s" % self.path
+            raise ue
 
     @property
     def is_event(self):
@@ -167,7 +171,6 @@ class Calendar(object):
     def insert_file(self, path):
         try:
             text = open(path).read()
-            text = text.encode(encoding='UTF-8', errors='replace')
             self.insert_text(text, path)
         except IOError:
             return
