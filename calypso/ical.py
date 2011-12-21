@@ -99,6 +99,9 @@ class Item(object):
             self.object.add("X-CALYPSO-NAME").value = name
 
         self.name = self.object.x_calypso_name.value
+
+        # VCALENDAR or VCARD
+        self.tag = self.object.name
             
         try:
             self.etag = hashlib.sha1(self.object.serialize()).hexdigest()
@@ -184,6 +187,7 @@ class Calendar(object):
         self.my_items = []
         self.mtime = 0
         self.scan_dir()
+        self.tag = "Collection"
 
     def has_git(self):
         return os.path.exists(os.path.join(self.path, ".git"))
