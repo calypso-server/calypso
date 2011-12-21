@@ -41,6 +41,7 @@ import sys
 import optparse
 
 import calypso
+import calypso.ical as ical
 
 # Get command-line options
 parser = optparse.OptionParser()
@@ -78,7 +79,10 @@ parser.add_option(
     "-c", "--certificate",
     default=calypso.config.get("server", "certificate"),
     help="certificate file ")
-options = parser.parse_args()[0]
+parser.add_option(
+    "-i", "--import", dest="import_dest")
+    
+(options, args) = parser.parse_args()
 
 # Update Calypso configuration according to options
 for option in parser.option_list:
@@ -91,6 +95,22 @@ for option in parser.option_list:
 if options.version:
     print(calypso.VERSION)
     sys.exit()
+
+# Run import if requested
+if options.import_dest:
+    try:
+        calendar = ical.Calendar(options.import_dest)
+    except Exception:
+        print "Cannot open calendar %s" % options.import_dest
+        sys.exit(1)
+    success = True
+    for arg in args:
+        if not calendar.append_file(arg):
+            success = False
+    if success:
+        sys.exit(0)
+    else:
+        sys.exit(1)
 
 # Fork if Calypso is launched as daemon
 if options.daemon:

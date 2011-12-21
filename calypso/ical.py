@@ -37,9 +37,6 @@ import vobject
 
 from calypso import config
 
-FOLDER = os.path.expanduser(config.get("storage", "folder"))
-    
-
 # This function overrides the builtin ``open`` function for this module
 # pylint: disable=W0622
 def open(path, mode="r"):
@@ -177,11 +174,12 @@ class Calendar(object):
                 
     def __init__(self, path):
         """Initialize the calendar with ``cal`` and ``user`` parameters."""
-        print ("New calendar %s" % path)
         
+        folder = os.path.expanduser(config.get("storage", "folder"))
+
         self.encoding = "utf-8"
         self.owner = path.split("/")[0]
-        self.path = os.path.join(FOLDER, path.replace("/", os.path.sep))
+        self.path = os.path.join(folder, path.replace("/", os.path.sep))
         self.pattern = os.path.join(self.path, "*")
         self.files = []
         self.my_items = []
@@ -276,10 +274,27 @@ class Calendar(object):
 
         new_item = Item(text, name, None)
         if not new_item:
-            return
+            return False
         if new_item.name not in (item.name for item in self.my_items):
                 self.create_file(new_item)
+                return True
+        return False
 
+    def append_file(self, path):
+        """Append items from ``path`` to calendar.
+        """
+
+        try:
+            text = open(path).read()
+            if not self.append(None, text):
+                print "Already in calendar: %s" % path
+                return True
+        except Exception, ex:
+            print "Failed to import: %s: %s" % (ex, path)
+            return False
+        print "Imported: %s" % arg
+        return True
+        
     def remove(self, name):
         """Remove object named ``name`` from calendar."""
         for old_item in self.my_items:
