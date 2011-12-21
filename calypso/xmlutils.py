@@ -68,6 +68,7 @@ def delete(path, calendar):
 
     """
     # Reading request
+    print "delete name %s" % name_from_path(path)
     calendar.remove(name_from_path(path))
 
     # Writing answer
@@ -83,6 +84,7 @@ def delete(path, calendar):
     status.text = _response(200)
     response.append(status)
 
+    print "Deleted\n"
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
@@ -130,7 +132,7 @@ def propfind(path, xml_request, calendar, depth):
 
         for tag in props:
             element = ET.Element(tag)
-            if tag == _tag("D", "resourcetype") and is_calendar:
+            if tag == _tag("D", "resourcetype"):
                 tag = ET.Element(_tag("C", "calendar"))
                 element.append(tag)
                 tag = ET.Element(_tag("D", "collection"))
@@ -143,10 +145,10 @@ def propfind(path, xml_request, calendar, depth):
                 else:
                     element.text = "text/calendar"
             elif tag == _tag("CS", "getctag") and is_calendar:
-                element.text = item.etag
+                element.text = item.ctag
             elif tag == _tag("D", "getetag"):
                 element.text = item.etag
-            elif tag == _tag("D", "displayname") and is_calendar:
+            elif tag == _tag("D", "displayname"):
                 element.text = calendar.name
             elif tag == _tag("D", "principal-URL"):
                 # TODO: use a real principal URL, read rfc3744-4.2 for info
@@ -325,7 +327,7 @@ def report(path, xml_request, calendar):
                 if tag == _tag("D", "getetag"):
                     element.text = item.etag
                 elif tag == _tag("C", "calendar-data"):
-                    element.text = item.text.decode('utf-8', errors='replace')
+                    element.text = item.text
                 prop.append(element)
 
             status = ET.Element(_tag("D", "status"))

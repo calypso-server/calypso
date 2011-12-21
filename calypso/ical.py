@@ -34,16 +34,10 @@ import hashlib
 import glob
 import tempfile
 import vobject
+import string
+import re
 
 from calypso import config
-
-# This function overrides the builtin ``open`` function for this module
-# pylint: disable=W0622
-def open(path, mode="r"):
-    """Open file at ``path`` with ``mode``, automagically managing encoding."""
-    return codecs.open(path, mode, config.get("encoding", "stock"))
-# pylint: enable=W0622
-
 
 #
 # Recursive search for 'name' within 'vobject'
@@ -67,7 +61,14 @@ class Item(object):
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
-        text = text.encode(encoding='UTF-8', errors='replace')
+        try:
+            text = text.encode('utf8')
+        except UnicodeDecodeError:
+            text = text.decode('latin1').encode('utf-8')
+
+        # Strip out control characters
+
+        text = re.sub(r"[\x01-\x09\x0b-\x1F\x7F]","",text)
 
         try:
             self.object = vobject.readOne(text)
@@ -113,11 +114,7 @@ class Item(object):
         Text is the serialized form of the item.
 
         """
-        try:
-            return self.object.serialize()
-        except UnicodeDecodeError, ue:
-            print "Unicode decode error in %s" % self.path
-            raise ue
+        return self.object.serialize().decode('utf-8')
 
     @property
     def length(self):
@@ -135,7 +132,7 @@ class Calendar(object):
 
     def insert_file(self, path):
         try:
-            text = open(path).read()
+            text = open(path,"rb").read()
             item = Item(text, None, path)
             if item:
                 self.my_items.append(item)
@@ -170,6 +167,10 @@ class Calendar(object):
         for file in self.files:
             if not file in files:
                 self.remove_file(file)
+        h = hashlib.sha1()
+        for item in self.my_items:
+            h.update(item.etag)
+        self._ctag = '%d-' % self.mtime + h.hexdigest()
         self.files = files
                 
     def __init__(self, path):
@@ -184,6 +185,8 @@ class Calendar(object):
         self.files = []
         self.my_items = []
         self.mtime = 0
+        self._ctag = ''
+        self.etag = hashlib.sha1(self.path).hexdigest()
         self.scan_dir()
         self.tag = "Collection"
 
@@ -207,7 +210,7 @@ class Calendar(object):
             
     def write_file(self, item):
         fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        file = os.fdopen(fd, 'w')
+        file = os.fdopen(fd, 'wb')
         file.write(item.text)
         file.close()
         return path
@@ -274,10 +277,13 @@ class Calendar(object):
 
         new_item = Item(text, name, None)
         if not new_item:
+            print "Cannot create new item"
             return False
         if new_item.name not in (item.name for item in self.my_items):
-                self.create_file(new_item)
-                return True
+            print "New item %s" % new_item.name
+            self.create_file(new_item)
+            return True
+        print "Item %s already present %s" % (new_item.name, self.get_item(new_item.name).path)
         return False
 
     def append_file(self, path):
@@ -285,18 +291,19 @@ class Calendar(object):
         """
 
         try:
-            text = open(path).read()
+            text = open(path,"rb").read()
             if not self.append(None, text):
                 print "Already in calendar: %s" % path
                 return True
         except Exception, ex:
             print "Failed to import: %s: %s" % (ex, path)
             return False
-        print "Imported: %s" % arg
+        print "Imported: %s" % path
         return True
         
     def remove(self, name):
         """Remove object named ``name`` from calendar."""
+        print "Remove object %s" % name
         for old_item in self.my_items:
             if old_item.name == name:
                 self.destroy_file(old_item)
@@ -330,16 +337,14 @@ class Calendar(object):
         #    os.makedirs(os.path.dirname(self.path))
         
         #text = serialize(headers=headers, items=items)
-        #return open(self.path, "w").write(text)
+        #return open(self.path, "wb").write(text)
         return True
 
     @property
-    def etag(self):
-        """Etag from calendar."""
-        h = hashlib.sha1()
-        for item in self.my_items:
-            h.update(item.etag)
-        return h.hexdigest()
+    def ctag(self):
+        self.scan_dir()
+        """Ctag from calendar."""
+        return self._ctag
 
     @property
     def name(self):

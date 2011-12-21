@@ -243,7 +243,9 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_DELETE(self):
         """Manage DELETE request."""
         item = self._calendar.get_item(xmlutils.name_from_path(self.path))
-        if item and self.headers.get("If-Match", item.etag) == item.etag:
+
+        if item and self.headers.get("If-Match", item.etag) == '"' + item.etag + '"':
+            print "item matches"
             # No ETag precondition or precondition verified, delete item
             self._answer = xmlutils.delete(self.path, self._calendar)
 
@@ -252,6 +254,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         else:
+            print "no item or etag"
             # No item or ETag precondition not verified, do not delete item
             self.send_response(client.PRECONDITION_FAILED)
 
@@ -278,6 +281,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         self._answer = xmlutils.propfind(
             self.path, xml_request, self._calendar,
             self.headers.get("depth", "infinity"))
+#        print "PROPFIND %s\n%s" % (xml_request, self._answer)
 
         self.send_response(client.MULTI_STATUS)
         self.send_header("DAV", "1, calendar-access")
@@ -316,7 +320,7 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_response(client.CREATED)
             self.send_header("ETag", etag)
             self.end_headers()
-
+        else:
             # PUT rejected in all other cases
             self.send_response(client.PRECONDITION_FAILED)
 
@@ -324,7 +328,9 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_REPORT(self):
         """Manage REPORT request."""
         xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+#        print "REPORT %s" % xml_request
         self._answer = xmlutils.report(self.path, xml_request, self._calendar)
+#        print "ANSWER %s" % self._answer
         self.send_response(client.MULTI_STATUS)
         self.send_header("Content-Length", len(self._answer))
         self.end_headers()
