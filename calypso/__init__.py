@@ -245,7 +245,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         item = self._calendar.get_item(xmlutils.name_from_path(self.path))
 
         if item and self.headers.get("If-Match", item.etag) == '"' + item.etag + '"':
-            print "item matches"
             # No ETag precondition or precondition verified, delete item
             self._answer = xmlutils.delete(self.path, self._calendar)
 
@@ -254,7 +253,6 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         else:
-            print "no item or etag"
             # No item or ETag precondition not verified, do not delete item
             self.send_response(client.PRECONDITION_FAILED)
 

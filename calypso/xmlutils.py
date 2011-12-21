@@ -132,7 +132,7 @@ def propfind(path, xml_request, calendar, depth):
 
         for tag in props:
             element = ET.Element(tag)
-            if tag == _tag("D", "resourcetype"):
+            if tag == _tag("D", "resourcetype") and is_calendar:
                 tag = ET.Element(_tag("C", "calendar"))
                 element.append(tag)
                 tag = ET.Element(_tag("D", "collection"))
@@ -148,7 +148,7 @@ def propfind(path, xml_request, calendar, depth):
                 element.text = item.ctag
             elif tag == _tag("D", "getetag"):
                 element.text = item.etag
-            elif tag == _tag("D", "displayname"):
+            elif tag == _tag("D", "displayname") and is_calendar:
                 element.text = calendar.name
             elif tag == _tag("D", "principal-URL"):
                 # TODO: use a real principal URL, read rfc3744-4.2 for info
