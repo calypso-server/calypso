@@ -306,6 +306,10 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             etag = self.headers.get("If-Match", items[0].etag).strip('"')
         if (len(items) == 0 and not self.headers.get("If-Match")) or \
                 (len(items) > 0 and etag in (i.etag for i in items)):
+#            if len(items) > 0:
+#                old_etag = items[0].etag
+#                print "Old etag %s new etag %s" % (old_etag, etag)
+
             # PUT allowed in 3 cases
             # Case 1: No item and no ETag precondition: Add new item
             # Case 2: Item and ETag precondition verified: Modify item
@@ -315,10 +319,14 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
             xmlutils.put(self.path, ical_request, self._calendar)
             etag = self._calendar.get_item(item_name).etag
 
+#            print "replacement etag %s" % etag
+
             self.send_response(client.CREATED)
             self.send_header("ETag", etag)
             self.end_headers()
+
         else:
+#            print "Precondition failed"
             # PUT rejected in all other cases
             self.send_response(client.PRECONDITION_FAILED)
 

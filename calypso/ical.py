@@ -72,11 +72,10 @@ class Item(object):
 
         try:
             self.object = vobject.readOne(text)
-        except Exception:
-            print "Parse error in %s %s\n" % (name, path)
-            return None
+        except Exception, ex:
+            print "Parse error in %s %s: %s" % (name, path, ex)
+            raise ex
 
-        self.path = path
 
         if not self.object.contents.has_key("x_calypso_name"):
             if not name:
@@ -96,16 +95,10 @@ class Item(object):
                 
             self.object.add("X-CALYPSO-NAME").value = name
 
+        self.path = path
         self.name = self.object.x_calypso_name.value
-
-        # VCALENDAR or VCARD
         self.tag = self.object.name
-            
-        try:
-            self.etag = hashlib.sha1(self.object.serialize()).hexdigest()
-        except Exception, ex:
-            print "Serialize error in %s %s" % (self.path, ex)
-            return None
+        self.etag = hashlib.sha1(text).hexdigest()
 
     @property
     def text(self):
@@ -130,13 +123,17 @@ class Item(object):
 class Calendar(object):
     """Internal calendar class."""
 
+    def read_file(self, path):
+        text = codecs.open(path,encoding='utf-8').read()
+        item = Item(text, None, path)
+        return item
+
     def insert_file(self, path):
         try:
-            text = open(path,"rb").read()
-            item = Item(text, None, path)
-            if item:
-                self.my_items.append(item)
-        except IOError:
+            item = self.read_file(path)
+            self.my_items.append(item)
+        except Exception, ex:
+            print "Insert %s failed: %s" % (path, ex)
             return
 
     def remove_file(self, path):
@@ -210,8 +207,8 @@ class Calendar(object):
             
     def write_file(self, item):
         fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
-        file = os.fdopen(fd, 'wb')
-        file.write(item.text)
+        file = os.fdopen(fd, 'w')
+        file.write(item.text.encode('utf-8'))
         file.close()
         return path
 
@@ -251,7 +248,7 @@ class Calendar(object):
             self.git_change(item.path)
             self.scan_dir()
         except Exception, ex:
-            print "Failed to rewrite %s: %s" % (path, ex)
+            print "Failed to rewrite %s: %s" % (item.path, ex)
         
     def get_item(self, name):
         """Get calendar item called ``name``."""
@@ -275,8 +272,9 @@ class Calendar(object):
 
         """
 
-        new_item = Item(text, name, None)
-        if not new_item:
+        try:
+            new_item = Item(text, name, None)
+        except Exception:
             print "Cannot create new item"
             return False
         if new_item.name not in (item.name for item in self.my_items):
@@ -301,8 +299,10 @@ class Calendar(object):
         if old_item:
             path = old_item.path
 
-        new_item = Item(text, name, path)
-        if not new_item:
+        try:
+            new_item = Item(text, name, path)
+        except Exception:
+            print "Failed to replace %s" % name
             return
 
         if path is not None:
@@ -316,10 +316,7 @@ class Calendar(object):
         """
 
         try:
-            text = open(path,"rb").read()
-            new_item = Item(text, None, None)
-            if not new_item:
-                return
+            new_item = self.read_file(path)
             old_item = self.get_item(new_item.name)
             if old_item:
                 new_item.path = old_item.path
@@ -334,18 +331,6 @@ class Calendar(object):
         return True
         
     def write(self, headers=None, items=None):
-        #"""Write calendar with given parameters."""
-        #headers = headers or self.headers or (
-        #    Header("PRODID:-//Calypso//NONSGML Calypso Server//EN"),
-        #    Header("VERSION:2.0"))
-        #items = items if items is not None else self.items
-
-        # Create folder if absent
-        #if not os.path.exists(os.path.dirname(self.path)):
-        #    os.makedirs(os.path.dirname(self.path))
-        
-        #text = serialize(headers=headers, items=items)
-        #return open(self.path, "wb").write(text)
         return True
 
     @property
