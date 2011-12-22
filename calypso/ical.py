@@ -242,13 +242,13 @@ class Calendar(object):
         except Exception, ex:
             print "Failed to remove %s: %s" % (item.path, ex)
 
-    def rewrite_file(self, item, path):
+    def rewrite_file(self, item):
         print "Change %s" % item.name
         try:
             new_path = self.write_file(item)
-            os.rename(new_path, path)
-            self.scan_file(path)
-            self.git_change(path)
+            os.rename(new_path, item.path)
+            self.scan_file(item.path)
+            self.git_change(item.path)
             self.scan_dir()
         except Exception, ex:
             print "Failed to rewrite %s: %s" % (path, ex)
@@ -286,21 +286,6 @@ class Calendar(object):
         print "Item %s already present %s" % (new_item.name, self.get_item(new_item.name).path)
         return False
 
-    def append_file(self, path):
-        """Append items from ``path`` to calendar.
-        """
-
-        try:
-            text = open(path,"rb").read()
-            if not self.append(None, text):
-                print "Already in calendar: %s" % path
-                return True
-        except Exception, ex:
-            print "Failed to import: %s: %s" % (ex, path)
-            return False
-        print "Imported: %s" % path
-        return True
-        
     def remove(self, name):
         """Remove object named ``name`` from calendar."""
         print "Remove object %s" % name
@@ -310,21 +295,44 @@ class Calendar(object):
                 
     def replace(self, name, text):
         """Replace content by ``text`` in objet named ``name`` in calendar."""
+
         path=None
-        for old_item in self.my_items:
-            if old_item.name == name:
-                path = old_item.path
-                break
+        old_item = self.get_item(name)
+        if old_item:
+            path = old_item.path
+
         new_item = Item(text, name, path)
         if not new_item:
             return
 
         if path is not None:
-            self.rewrite_file(new_item, path)
+            self.rewrite_file(new_item)
         else:
             self.remove(name)
             self.append(name, text)
 
+    def import_file(self, path):
+        """Merge items from ``path`` to calendar.
+        """
+
+        try:
+            text = open(path,"rb").read()
+            new_item = Item(text, None, None)
+            if not new_item:
+                return
+            old_item = self.get_item(new_item.name)
+            if old_item:
+                new_item.path = old_item.path
+                self.rewrite_file(new_item)
+                print "Updated %s from %s" % (new_item.name, path)
+            else:
+                self.create_file(new_item)
+                print "Added %s from %s" % (new_item.name, path)
+        except Exception, ex:
+            print "Failed to import: %s: %s" % (ex, path)
+            return False
+        return True
+        
     def write(self, headers=None, items=None):
         #"""Write calendar with given parameters."""
         #headers = headers or self.headers or (

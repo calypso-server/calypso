@@ -105,7 +105,7 @@ if options.import_dest:
         sys.exit(1)
     success = True
     for arg in args:
-        if not calendar.append_file(arg):
+        if not calendar.import_file(arg):
             success = False
     if success:
         sys.exit(0)
@@ -122,4 +122,4 @@ if options.daemon:
 server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
 server = server_class(
     (options.host, options.port), calypso.CalendarHTTPHandler)
-server.serve_forever()
+server.serve_forever(poll_interval=10)
