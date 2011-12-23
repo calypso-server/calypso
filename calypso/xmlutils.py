@@ -111,6 +111,7 @@ def propfind(path, xml_request, calendar, depth):
             # depth is 1, infinity or not specified
             # we limit ourselves to depth == 1
             items = [calendar] + calendar.items
+#            items = [calendar]
     else:
         items = []
 
@@ -158,7 +159,8 @@ def propfind(path, xml_request, calendar, depth):
             elif tag in (
                 _tag("D", "principal-collection-set"),
                 _tag("C", "calendar-user-address-set"),
-                _tag("C", "calendar-home-set")):
+                _tag("C", "calendar-home-set"),
+                _tag("C", "addressbook-home-set")):
                 tag = ET.Element(_tag("D", "href"))
                 tag.text = path
                 element.append(tag)
@@ -169,6 +171,11 @@ def propfind(path, xml_request, calendar, depth):
                 comp = ET.Element(_tag("C", "comp"))
                 comp.set("name", "VEVENT")
                 element.append(comp)
+            elif tag == _tag("D", "supported-report-set"):
+                tag = ET.Element(_tag("C", "calendar-multiget"))
+                element.append(tag)
+                tag = ET.Element(_tag("C", "filter"))
+                element.append(tag)
             elif tag == _tag("D", "current-user-privilege-set"):
                 privilege = ET.Element(_tag("D", "privilege"))
                 privilege.append(ET.Element(_tag("D", "all")))
