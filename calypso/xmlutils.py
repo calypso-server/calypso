@@ -35,7 +35,7 @@ import dateutil.parser
 import dateutil.rrule
 import dateutil.tz
 import datetime
-
+import email.utils
 import urllib
 
 from calypso import client, config, ical
@@ -69,7 +69,6 @@ def delete(path, calendar):
 
     """
     # Reading request
-    print "delete name %s" % name_from_path(path)
     calendar.remove(name_from_path(path))
 
     # Writing answer
@@ -85,7 +84,6 @@ def delete(path, calendar):
     status.text = _response(200)
     response.append(status)
 
-    print "Deleted\n"
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
@@ -99,8 +97,12 @@ def propfind(path, xml_request, calendar, depth):
     root = ET.fromstring(xml_request)
 
     prop_element = root.find(_tag("D", "prop"))
-    prop_list = prop_element.getchildren()
-    props = [prop.tag for prop in prop_list]
+    if prop_element is not None:
+        prop_list = prop_element.getchildren()
+        props = [prop.tag for prop in prop_list]
+    else:
+        props = None
+
     
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
@@ -184,7 +186,9 @@ def propfind(path, xml_request, calendar, depth):
             elif tag == _tag("D", "getcontentlength"):
                 element.text = item.length
             elif tag == _tag("D", "getlastmodified"):
-                element.text = time.strftime("%a, %d %b %Y %H:%M:%S +0000", item.last_modified)
+#                element.text = time.strftime("%a, %d %b %Y %H:%M:%S +0000", item.last_modified)
+#                element.text = email.utils.formatdate(item.last_modified)
+                element.text = email.utils.formatdate(time.mktime(item.last_modified))
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))
