@@ -77,23 +77,33 @@ class Item(object):
             raise ex
 
 
-        if not self.object.contents.has_key("x_calypso_name"):
+        if not self.object.contents.has_key('x-calypso-name'):
             if not name:
                 if self.object.name == 'VCARD' or self.object.name == 'VEVENT':
                     if not self.object.contents.has_key('uid'):
                         self.object.add('UID').value = hashlib.sha1(text).hexdigest()
+                    else:
+                        print "using UID %s for name" % self.object.uid.value
                     name = self.object.uid.value
                 else:
                     for child in self.object.getChildren():
                         if child.name == 'VEVENT' or child.name == 'VCARD':
                             if not child.contents.has_key('uid'):
                                 child.add('UID').value = hashlib.sha1(text).hexdigest()
+                            else:
+                                print "using child UID %s for name" % child.uid.value
                             name = child.uid.value
                             break
                     if not name:
                         name = hashlib.sha1(text).hexdigest()
+                        print "using hash %s for name" % name
                 
             self.object.add("X-CALYPSO-NAME").value = name
+        else:
+            names = self.object.contents[u'x-calypso-name']
+            if len(names) > 1:
+                self.object.contents[u'x-calypso-name'] = [names[0]]
+                print "%s: multiple names %s" % (path, names[0])
 
         self.path = path
         self.name = self.object.x_calypso_name.value
