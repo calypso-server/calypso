@@ -240,12 +240,17 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_header("ETag", etag)
         self.end_headers()
 
+    def if_match(self, item):
+        etag = '"' + item.etag + '"'
+        return self.headers.get("If-Match", etag) == etag
+
     @check_rights
     def do_DELETE(self):
         """Manage DELETE request."""
-        item = self._calendar.get_item(xmlutils.name_from_path(self.path))
+        item_name = xmlutils.name_from_path(self.path)
+        item = self._calendar.get_item(item_name)
 
-        if item and self.headers.get("If-Match", item.etag) == '"' + item.etag + '"':
+        if item and self.if_match(item):
             # No ETag precondition or precondition verified, delete item
             self._answer = xmlutils.delete(self.path, self._calendar)
 
@@ -305,16 +310,8 @@ class CalendarHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PUT(self):
         """Manage PUT request."""
         item_name = xmlutils.name_from_path(self.path)
-        items = self._calendar.get_items(item_name)
-        if len(items) == 0:
-            etag = 0
-        else:
-            etag = self.headers.get("If-Match", items[0].etag).strip('"')
-        if (len(items) == 0 and not self.headers.get("If-Match")) or \
-                (len(items) > 0 and etag in (i.etag for i in items)):
-#            if len(items) > 0:
-#                old_etag = items[0].etag
-#                print "Old etag %s new etag %s" % (old_etag, etag)
+        item = self._calendar.get_item(item_name)
+        if not item or self.if_match(item):
 
             # PUT allowed in 3 cases
             # Case 1: No item and no ETag precondition: Add new item
