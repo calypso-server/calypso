@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Calypso Server - Calendar Server
+# This file is part of Calypso - CalDAV/CardDAV/WebDAV Server
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
 # Copyright © 2008 Pascal Halter
@@ -20,9 +20,9 @@
 # along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Calypso calendar classes.
+Calypso collection classes.
 
-Define the main classes of a calendar as seen from the server.
+Define the main classes of a collection as seen from the server.
 
 """
 
@@ -124,8 +124,8 @@ class Item(object):
             return value.utctimetuple()
         return time.gmtime()
 
-class Calendar(object):
-    """Internal calendar class."""
+class Collection(object):
+    """Internal collection class."""
 
     def read_file(self, path):
         text = codecs.open(path,encoding='utf-8').read()
@@ -175,7 +175,7 @@ class Calendar(object):
         self.files = files
                 
     def __init__(self, path):
-        """Initialize the calendar with ``cal`` and ``user`` parameters."""
+        """Initialize the collection with ``cal`` and ``user`` parameters."""
         
         folder = os.path.expanduser(config.get("storage", "folder"))
 
@@ -223,7 +223,7 @@ class Calendar(object):
             try:
                 os.makedirs(os.path.dirname(self.path))
             except OSError, ose:
-                print "Failed to make calendar directory %s: %s" % (self.path, ose)
+                print "Failed to make collection directory %s: %s" % (self.path, ose)
                 return
 
         try:
@@ -255,14 +255,14 @@ class Calendar(object):
             print "Failed to rewrite %s: %s" % (item.path, ex)
         
     def get_item(self, name):
-        """Get calendar item called ``name``."""
+        """Get collection item called ``name``."""
         for item in self.my_items:
             if item.name == name:
                 return item
         return None
 
     def get_items(self, name):
-        """Get calendar items called ``name``."""
+        """Get collection items called ``name``."""
         items=[]
         for item in self.my_items:
             if item.name == name:
@@ -270,7 +270,7 @@ class Calendar(object):
         return items
 
     def append(self, name, text):
-        """Append items from ``text`` to calendar.
+        """Append items from ``text`` to collection.
 
         If ``name`` is given, give this name to new items in ``text``.
 
@@ -289,14 +289,14 @@ class Calendar(object):
         return False
 
     def remove(self, name):
-        """Remove object named ``name`` from calendar."""
+        """Remove object named ``name`` from collection."""
         print "Remove object %s" % name
         for old_item in self.my_items:
             if old_item.name == name:
                 self.destroy_file(old_item)
                 
     def replace(self, name, text):
-        """Replace content by ``text`` in objet named ``name`` in calendar."""
+        """Replace content by ``text`` in objet named ``name`` in collection."""
 
         path=None
         old_item = self.get_item(name)
@@ -316,7 +316,7 @@ class Calendar(object):
             self.append(name, text)
 
     def import_file(self, path):
-        """Merge items from ``path`` to calendar.
+        """Merge items from ``path`` to collection.
         """
 
         try:
@@ -340,17 +340,17 @@ class Calendar(object):
     @property
     def ctag(self):
         self.scan_dir()
-        """Ctag from calendar."""
+        """Ctag from collection."""
         return self._ctag
 
     @property
     def name(self):
-        """Calendar name."""
+        """Collection name."""
         return self.path.split(os.path.sep)[-1]
 
     @property
     def text(self):
-        """Calendar as plain text."""
+        """Collection as plain text."""
         self.scan_dir()
         _text = ""
         for item in self.my_items:
@@ -359,18 +359,18 @@ class Calendar(object):
 
     @property
     def headers(self):
-        """Find headers items in calendar."""
+        """Find headers items in collection."""
         return []
 
     @property
     def items(self):
-        """Get list of all items in calendar."""
+        """Get list of all items in collection."""
         self.scan_dir()
         return self.my_items
 
     @property
     def last_modified(self):
-        """Get the last time the calendar has been modified.
+        """Get the last time the collection has been modified.
 
         The date is formatted according to rfc1123-5.2.14.
 

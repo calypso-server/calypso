@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# This file is part of Calypso Server - Calendar Server
+# This file is part of Calypso - CalDAV/CardDAV/WebDAV Server
 # Copyright © 2011 Keith Packard
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
@@ -38,7 +38,7 @@ import datetime
 import email.utils
 import urllib
 
-from calypso import client, config, ical
+from calypso import client, config, webdav
 
 
 NAMESPACES = {
@@ -62,14 +62,14 @@ def name_from_path(path):
     path_parts = path.strip("/").split("/")
     return urllib.unquote(path_parts[-1]) if len(path_parts) > 2 else None
 
-def delete(path, calendar):
+def delete(path, collection):
     """Read and answer DELETE requests.
 
     Read rfc4918-9.6 for info.
 
     """
     # Reading request
-    calendar.remove(name_from_path(path))
+    collection.remove(name_from_path(path))
 
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
@@ -87,7 +87,7 @@ def delete(path, calendar):
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
-def propfind(path, xml_request, calendar, depth):
+def propfind(path, xml_request, collection, depth):
     """Read and answer PROPFIND requests.
 
     Read rfc4918-9.1 for info.
@@ -107,25 +107,25 @@ def propfind(path, xml_request, calendar, depth):
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
 
-    if calendar:
+    if collection:
         if depth == "0":
-            items = [calendar]
+            items = [collection]
         else:
             # depth is 1, infinity or not specified
             # we limit ourselves to depth == 1
-            items = [calendar] + calendar.items
-#            items = [calendar]
+            items = [collection] + collection.items
+#            items = [collection]
     else:
         items = []
 
     for item in items:
-        is_calendar = isinstance(item, ical.Calendar)
+        is_collection = isinstance(item, webdav.Collection)
 
         response = ET.Element(_tag("D", "response"))
         multistatus.append(response)
 
         href = ET.Element(_tag("D", "href"))
-        href.text = path if is_calendar else path + item.name
+        href.text = path if is_collection else path + item.name
         response.append(href)
 
         propstat = ET.Element(_tag("D", "propstat"))
@@ -136,24 +136,24 @@ def propfind(path, xml_request, calendar, depth):
 
         for tag in props:
             element = ET.Element(tag)
-            if tag == _tag("D", "resourcetype") and is_calendar:
+            if tag == _tag("D", "resourcetype") and is_collection:
                 tag = ET.Element(_tag("C", "calendar"))
                 element.append(tag)
                 tag = ET.Element(_tag("D", "collection"))
                 element.append(tag)
             elif tag == _tag("D", "owner"):
-                element.text = calendar.owner
+                element.text = collection.owner
             elif tag == _tag("D", "getcontenttype"):
                 if item.tag == 'VCARD':
                     element.text = "text/vcard"
                 else:
                     element.text = "text/calendar"
-            elif tag == _tag("CS", "getctag") and is_calendar:
+            elif tag == _tag("CS", "getctag") and is_collection:
                 element.text = item.ctag
             elif tag == _tag("D", "getetag"):
                 element.text = item.etag
-            elif tag == _tag("D", "displayname") and is_calendar:
-                element.text = calendar.name
+            elif tag == _tag("D", "displayname") and is_collection:
+                element.text = collection.name
             elif tag == _tag("D", "principal-URL"):
                 # TODO: use a real principal URL, read rfc3744-4.2 for info
                 tag = ET.Element(_tag("D", "href"))
@@ -198,15 +198,15 @@ def propfind(path, xml_request, calendar, depth):
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
-def put(path, ical_request, calendar):
+def put(path, webdav_request, collection):
     """Read PUT requests."""
     name = name_from_path(path)
-    if name in (item.name for item in calendar.items):
+    if name in (item.name for item in collection.items):
         # PUT is modifying an existing item
-        calendar.replace(name, ical_request)
+        collection.replace(name, webdav_request)
     else:
         # PUT is adding a new item
-        calendar.append(name, ical_request)
+        collection.append(name, webdav_request)
 
 
 def match_filter_element(vobject, fe):
@@ -276,7 +276,7 @@ def match_filter(item, filter):
         if match_filter_element(item.object, fe):
             return True
 
-def report(path, xml_request, calendar):
+def report(path, xml_request, collection):
     """Read and answer REPORT requests.
 
     Read rfc3253-3.6 for info.
@@ -291,7 +291,7 @@ def report(path, xml_request, calendar):
 
     filter_element = root.find(_tag("C", "filter"))
 
-    if calendar:
+    if collection:
         if root.tag == _tag("C", "calendar-multiget"):
             # Read rfc4791-7.9 for info
             hreferences = set((href_element.text for href_element
@@ -305,16 +305,16 @@ def report(path, xml_request, calendar):
     multistatus = ET.Element(_tag("D", "multistatus"))
 
     for hreference in hreferences:
-        # Check if the reference is an item or a calendar
+        # Check if the reference is an item or a collection
         name = name_from_path(hreference)
         if name:
             # Reference is an item
             path = "/".join(hreference.split("/")[:-1]) + "/"
-            items = (item for item in calendar.items if item.name == name)
+            items = (item for item in collection.items if item.name == name)
         else:
-            # Reference is a calendar
+            # Reference is a collection
             path = hreference
-            items = calendar.items
+            items = collection.items
 
         
         for item in items:

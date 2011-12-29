@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# This file is part of Calypso Server - Calendar Server
+# This file is part of Calypso - CalDAV/CardDAV/WebDAV Server
 # Copyright © 2011 Keith Packard
 # Copyright © 2008-2011 Guillaume Ayoub
 # Copyright © 2008 Nicolas Kandel
@@ -99,13 +99,13 @@ if options.version:
 # Run import if requested
 if options.import_dest:
     try:
-        calendar = ical.Calendar(options.import_dest)
+        collection = ical.Collection(options.import_dest)
     except Exception:
-        print "Cannot open calendar %s" % options.import_dest
+        print "Cannot open collection %s" % options.import_dest
         sys.exit(1)
     success = True
     for arg in args:
-        if not calendar.import_file(arg):
+        if not collection.import_file(arg):
             success = False
     if success:
         sys.exit(0)
@@ -118,8 +118,8 @@ if options.daemon:
         sys.exit()
     sys.stdout = sys.stderr = open(os.devnull, "w")
 
-# Launch calendar server
+# Launch server
 server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
 server = server_class(
-    (options.host, options.port), calypso.CalendarHTTPHandler)
+    (options.host, options.port), calypso.CollectionHTTPHandler)
 server.serve_forever(poll_interval=10)
