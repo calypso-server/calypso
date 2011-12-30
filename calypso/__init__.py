@@ -47,7 +47,7 @@ except ImportError:
     import BaseHTTPServer as server
 # pylint: enable=F0401
 
-from calypso import acl, config, ical, xmlutils
+from . import acl, config, ical, xmlutils
 
 
 VERSION = "0.5"

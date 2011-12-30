@@ -38,7 +38,7 @@ import datetime
 import email.utils
 import urllib
 
-from calypso import client, config, ical
+from . import client, config, ical
 
 
 NAMESPACES = {
