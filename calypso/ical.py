@@ -231,8 +231,10 @@ class Calendar(object):
             self.scan_file(path)
             self.git_add(path)
             self.scan_dir()
+        except OSError, ex:
+            print "Error writing file: %s" % ex
         except Exception, ex:
-            print "Failed to create %s: %s" % (path % ex)
+            print "Failed to create %s: %s" % (path,  ex)
 
     def destroy_file(self, item):
         print "Remove %s" % item.name
