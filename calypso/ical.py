@@ -191,6 +191,12 @@ class Calendar(object):
         self.scan_dir()
         self.tag = "Collection"
 
+    def __str__(self):
+        return "Calendar-%s (at %s)" % (self.name, self.path)
+
+    def __repr__(self):
+        return "<Calendar %s>" % (self.name)
+        
     def has_git(self):
         return os.path.exists(os.path.join(self.path, ".git"))
 
