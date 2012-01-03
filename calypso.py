@@ -41,7 +41,7 @@ import sys
 import optparse
 
 import calypso
-import calypso.ical as ical
+import calypso.webdav as webdav
 
 # Get command-line options
 parser = optparse.OptionParser()
@@ -99,7 +99,7 @@ if options.version:
 # Run import if requested
 if options.import_dest:
     try:
-        collection = ical.Collection(options.import_dest)
+        collection = webdav.Collection(options.import_dest)
     except Exception:
         print "Cannot open collection %s" % options.import_dest
         sys.exit(1)
