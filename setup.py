@@ -67,8 +67,7 @@ setup(
     author="Keith Packard",
     author_email="keithp@keithp.com",
     url="http://keithp.com/",
-    download_url="http://keithp.com/git/calypso" % \
-        calypso.VERSION,
+    download_url="http://keithp.com/git/calypso",
     license="GNU GPL v3",
     platforms="Any",
     packages=["calypso", "calypso.acl"],
