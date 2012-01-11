@@ -195,8 +195,8 @@ class Collection(object):
                 self.insert_file(filename)
         for file in self.files:
             if not file.path in filenames:
-                print "Removed %s" % filename
-                self.remove_file(file.name)
+                print "Removed %s" % file.path
+                self.remove_file(file.path)
         h = hashlib.sha1()
         for item in self.my_items:
             h.update(item.etag)
