@@ -124,6 +124,24 @@ class Item(object):
             return value.utctimetuple()
         return time.gmtime()
 
+class Pathtime(object):
+    """Path name and timestamps"""
+
+    def __init__(self, path):
+    	self.path = path
+        self.mtime = self.curmtime
+
+    @property
+    def curmtime(self):
+        return os.path.getmtime(self.path)
+
+    def is_up_to_date(self):
+        newmtime = self.curmtime
+        if newmtime == self.mtime:
+            return True
+        self.mtime = newmtime
+        return False
+
 class Collection(object):
     """Internal collection class."""
 
@@ -145,7 +163,6 @@ class Collection(object):
         for old_item in self.my_items:
             if old_item.path == path:
                 old_items.append(old_item)
-                
         for old_item in old_items:
             self.my_items.remove(old_item)
         
@@ -160,19 +177,31 @@ class Collection(object):
                 return
         except OSError:
             return
+        print "Scan %s" % self.path
         self.mtime = mtime
-        files = glob.glob(self.pattern)
-        for file in files:
-            if not file in self.files:
-                self.insert_file(file)
+        filenames = glob.glob(self.pattern)
+        newfiles = []
+        for filename in filenames:
+            for file in self.files:
+                if filename == file.path:
+                    newfiles.append(file)
+                    if not file.is_up_to_date():
+                        print "Changed %s" % filename
+                        self.scan_file(filename)
+                    break
+            else:
+                print "New %s" % filename
+                newfiles.append(Pathtime(filename))
+                self.insert_file(filename)
         for file in self.files:
-            if not file in files:
-                self.remove_file(file)
+            if not file.path in filenames:
+                print "Removed %s" % filename
+                self.remove_file(file.name)
         h = hashlib.sha1()
         for item in self.my_items:
             h.update(item.etag)
         self._ctag = '%d-' % self.mtime + h.hexdigest()
-        self.files = files
+        self.files = newfiles
                 
     def __init__(self, path):
         """Initialize the collection with ``cal`` and ``user`` parameters."""
