@@ -250,8 +250,12 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def if_match(self, item):
-        etag = '"' + item.etag + '"'
-        return self.headers.get("If-Match", etag) == etag
+        header = self.headers.get("If-Match", item.etag)
+        if header == item.etag:
+            return True
+        if header == '"' + item.etag + '"':
+            return True
+        return False
 
     @check_rights
     def do_DELETE(self):
