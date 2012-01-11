@@ -215,34 +215,39 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @check_rights
     def do_HEAD(self):
         """Manage HEAD request."""
-        item_name = xmlutils.name_from_path(self.path)
-        if item_name:
-            # Get collection item
-            item = self._collection.get_item(item_name)
-            if item:
-                answer_text = item.text
-                etag = item.etag
-            else:
-                self._answer = None
-                self.send_response(client.GONE)
-                return
-        else:
-            # Get whole collection
-            answer_text = self._collection.text
-            etag = self._collection.etag
-
         try:
-            self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
-        except UnicodeDecodeError:
-            answer_text = answer_text.decode(errors="ignore")
-            self._answer = answer_text.encode(self._encoding,"ignore")
+            item_name = xmlutils.name_from_path(self.path)
+            if item_name:
+                # Get collection item
+                item = self._collection.get_item(item_name)
+                if item:
+                    answer_text = item.text
+                    etag = item.etag
+                else:
+                    self._answer = None
+                    self.send_response(client.GONE)
+                    return
+            else:
+                # Get whole collection
+                answer_text = self._collection.text
+                etag = self._collection.etag
+                
+            try:
+                self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
+            except UnicodeDecodeError:
+                answer_text = answer_text.decode(errors="ignore")
+                self._answer = answer_text.encode(self._encoding,"ignore")
             
-        self.send_response(client.OK)
-        self.send_header("Content-Length", len(self._answer))
-        self.send_header("Content-Type", "text/calendar")
-        self.send_header("Last-Modified", email.utils.formatdate(time.mktime(self._collection.last_modified)))
-        self.send_header("ETag", etag)
-        self.end_headers()
+            self.send_response(client.OK)
+            self.send_header("Content-Length", len(self._answer))
+            self.send_header("Content-Type", "text/calendar")
+            self.send_header("Last-Modified", email.utils.formatdate(time.mktime(self._collection.last_modified)))
+            self.send_header("ETag", etag)
+            self.end_headers()
+        except Exception, ex:
+            print "Failed HEAD %s", ex
+            self.send_response(client.BAD_REQUEST)
+            self.end_headers()
 
     def if_match(self, item):
         etag = '"' + item.etag + '"'
@@ -251,20 +256,25 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @check_rights
     def do_DELETE(self):
         """Manage DELETE request."""
-        item_name = xmlutils.name_from_path(self.path)
-        item = self._collection.get_item(item_name)
+        try:
+            item_name = xmlutils.name_from_path(self.path)
+            item = self._collection.get_item(item_name)
 
-        if item and self.if_match(item):
-            # No ETag precondition or precondition verified, delete item
-            self._answer = xmlutils.delete(self.path, self._collection)
-
-            self.send_response(client.NO_CONTENT)
-            self.send_header("Content-Length", len(self._answer))
+            if item and self.if_match(item):
+                # No ETag precondition or precondition verified, delete item
+                self._answer = xmlutils.delete(self.path, self._collection)
+                
+                self.send_response(client.NO_CONTENT)
+                self.send_header("Content-Length", len(self._answer))
+                self.end_headers()
+                self.wfile.write(self._answer)
+            else:
+                # No item or ETag precondition not verified, do not delete item
+                self.send_response(client.PRECONDITION_FAILED)
+        except Exception, ex:
+            print "Failed DELETE %s", ex
+            self.send_response(client.BAD_REQUEST)
             self.end_headers()
-            self.wfile.write(self._answer)
-        else:
-            # No item or ETag precondition not verified, do not delete item
-            self.send_response(client.PRECONDITION_FAILED)
 
     @check_rights
     def do_MKCALENDAR(self):
@@ -285,8 +295,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @check_rights
     def do_PROPFIND(self):
         """Manage PROPFIND request."""
-        xml_request = self.rfile.read(int(self.headers["Content-Length"]))
         try:
+            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
 #            print "PROPFIND %s" % xml_request
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
@@ -299,54 +309,70 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
-        except Exception:
+        except Exception, ex:
+            print "Failed PROPFIND %s", ex
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
     @check_rights
     def do_SEARCH(self):
         """Manage SEARCH request."""
-        xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-        self.send_response(client.NO_CONTENT)
-        self.end_headers()
-
+        try:
+            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+            self.send_response(client.NO_CONTENT)
+            self.end_headers()
+        except Exception, ex:
+            print "Failed SEARCH %s", ex
+            self.send_response(client.BAD_REQUEST)
+            self.end_headers()
+        
     @check_rights
     def do_PUT(self):
         """Manage PUT request."""
-        item_name = xmlutils.name_from_path(self.path)
-        item = self._collection.get_item(item_name)
-        if not item or self.if_match(item):
+        try:
+            item_name = xmlutils.name_from_path(self.path)
+            item = self._collection.get_item(item_name)
+            if not item or self.if_match(item):
 
-            # PUT allowed in 3 cases
-            # Case 1: No item and no ETag precondition: Add new item
-            # Case 2: Item and ETag precondition verified: Modify item
-            # Case 3: Item and no Etag precondition: Force modifying item
-            webdav_request = self._decode(
-                self.rfile.read(int(self.headers["Content-Length"])))
-            xmlutils.put(self.path, webdav_request, self._collection)
-            etag = self._collection.get_item(item_name).etag
+                # PUT allowed in 3 cases
+                # Case 1: No item and no ETag precondition: Add new item
+                # Case 2: Item and ETag precondition verified: Modify item
+                # Case 3: Item and no Etag precondition: Force modifying item
+                webdav_request = self._decode(
+                    self.rfile.read(int(self.headers["Content-Length"])))
+                xmlutils.put(self.path, webdav_request, self._collection)
+                
+                etag = self._collection.get_item(item_name).etag
+                #print "replacement etag %s" % etag
 
-#            print "replacement etag %s" % etag
-
-            self.send_response(client.CREATED)
-            self.send_header("ETag", etag)
+                self.send_response(client.CREATED)
+                self.send_header("ETag", etag)
+                self.end_headers()
+            else:
+                #print "Precondition failed"
+                # PUT rejected in all other cases
+                self.send_response(client.PRECONDITION_FAILED)
+        except Exception, ex:
+            print "Failed PUT %s", ex
+            self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
-        else:
-#            print "Precondition failed"
-            # PUT rejected in all other cases
-            self.send_response(client.PRECONDITION_FAILED)
 
     @check_rights
     def do_REPORT(self):
         """Manage REPORT request."""
-        xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-#        print "REPORT %s" % xml_request
-        self._answer = xmlutils.report(self.path, xml_request, self._collection)
-#        print "ANSWER %s" % self._answer
-        self.send_response(client.MULTI_STATUS)
-        self.send_header("Content-Length", len(self._answer))
-        self.end_headers()
-        self.wfile.write(self._answer)
+        try:
+            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+            #print "REPORT %s" % xml_request
+            self._answer = xmlutils.report(self.path, xml_request, self._collection)
+            #print "ANSWER %s" % self._answer
+            self.send_response(client.MULTI_STATUS)
+            self.send_header("Content-Length", len(self._answer))
+            self.end_headers()
+            self.wfile.write(self._answer)
+        except Exception, ex:
+            print "Failed REPORT %s", ex
+            self.send_response(client.BAD_REQUEST)
+            self.end_headers()
 
     # pylint: enable=C0103
