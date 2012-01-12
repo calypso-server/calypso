@@ -238,7 +238,10 @@ class Collection(object):
             command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "modified file")
             os.system(command)
             # Touch directory so that another running instance will update
-            os.utime(self.path, None)
+            try:
+                os.utime(self.path, None)
+            except Exception, ex:
+                print "Failed to set directory mtime %s" % ex
             
     def write_file(self, item):
         fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
