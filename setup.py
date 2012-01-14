@@ -37,8 +37,8 @@ For further information, please visit the `Calypso Website
 """
 
 import os
-from distutils.core import setup
 from distutils.command.build_scripts import build_scripts
+from setuptools import setup
 
 try:
     from calypso import VERSION
@@ -77,6 +77,7 @@ setup(
     platforms="Any",
     packages=["calypso", "calypso.acl"],
     provides=["calypso"],
+    install_requires=["vobject",],
     scripts=["calypso.py"],
     cmdclass={"build_scripts": BuildScripts},
     keywords=["calendar", "CalDAV"],
