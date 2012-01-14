@@ -36,6 +36,7 @@ arguments.
 
 # TODO: Manage smart and configurable logs
 
+import logging
 import os
 import sys
 import optparse
@@ -81,6 +82,10 @@ parser.add_option(
     help="certificate file ")
 parser.add_option(
     "-i", "--import", dest="import_dest")
+parser.add_option(
+    "-g", "--debug", action="store_true",
+    default=False,
+    help="enable debug logging")
     
 (options, args) = parser.parse_args()
 
@@ -95,6 +100,10 @@ for option in parser.option_list:
 if options.version:
     print(calypso.VERSION)
     sys.exit()
+
+# Print version and exit if the option is given
+if options.debug:
+    logging.basicConfig(level=logging.DEBUG)
 
 # Run import if requested
 if options.import_dest:
