@@ -36,6 +36,7 @@ import tempfile
 import vobject
 import string
 import re
+import logging
 
 from . import config
 
@@ -206,6 +207,7 @@ class Collection(object):
     def __init__(self, path):
         """Initialize the collection with ``cal`` and ``user`` parameters."""
         
+        self.log = logging.getLogger(__name__)
         folder = os.path.expanduser(config.get("storage", "folder"))
 
         self.encoding = "utf-8"
@@ -251,9 +253,11 @@ class Collection(object):
             
     def write_file(self, item):
         fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
+        self.log.debug('Trying to write to %s', path)
         file = os.fdopen(fd, 'w')
         file.write(item.text.encode('utf-8'))
         file.close()
+        self.log.debug('Wrote %s to %s', file, path)
         return path
 
     def create_file(self, item):
@@ -274,6 +278,7 @@ class Collection(object):
         except OSError, ex:
             print "Error writing file: %s" % ex
         except Exception, ex:
+            print "Caught Exception:\n%s" % (ex,)
             print "Failed to create %s: %s" % (path,  ex)
 
     def destroy_file(self, item):
@@ -320,8 +325,8 @@ class Collection(object):
 
         try:
             new_item = Item(text, name, None)
-        except Exception:
-            print "Cannot create new item"
+        except Exception, e:
+            print "Cannot create new item: %s" % e
             return False
         if new_item.name not in (item.name for item in self.my_items):
             print "New item %s" % new_item.name
