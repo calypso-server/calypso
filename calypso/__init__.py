@@ -41,6 +41,7 @@ import socket
 import time
 import datetime
 import email.utils
+import logging
 
 # Manage Python2/3 different modules
 # pylint: disable=F0401
@@ -122,10 +123,11 @@ class HTTPSServer(HTTPServer):
 class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     """HTTP requests handler for WebDAV collections."""
     _encoding = config.get("encoding", "request")
+    log = logging.getLogger()
 
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
-
+        
     def address_string(self):
         return str(self.client_address[0])
 
@@ -245,7 +247,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("ETag", etag)
             self.end_headers()
         except Exception, ex:
-            print "Failed HEAD %s", ex
+            self.log.exception("Failed HEAD")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -276,7 +278,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # No item or ETag precondition not verified, do not delete item
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            print "Failed DELETE %s", ex
+            self.log.exception("Failed DELETE")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -301,11 +303,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage PROPFIND request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-#            print "PROPFIND %s" % xml_request
+#            self.log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
                 self.headers.get("depth", "infinity"))
-#           print "PROPFIND %s\n%s" % (xml_request, self._answer)
+#           self.log.debug("PROPFIND %s\n%s", xml_request, self._answer)
 
             self.send_response(client.MULTI_STATUS)
             self.send_header("DAV", "1, calendar-access")
@@ -314,7 +316,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            print "Failed PROPFIND %s", ex
+            self.log.exception("Failed PROPFIND")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -326,7 +328,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_response(client.NO_CONTENT)
             self.end_headers()
         except Exception, ex:
-            print "Failed SEARCH %s", ex
+            self.log.exception("Failed SEARCH")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
         
@@ -347,17 +349,17 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 xmlutils.put(self.path, webdav_request, self._collection)
                 
                 etag = item.etag
-                #print "replacement etag %s" % etag
+                #self.log.debug("replacement etag %s", etag)
 
                 self.send_response(client.CREATED)
                 self.send_header("ETag", etag)
                 self.end_headers()
             else:
-                #print "Precondition failed"
+                #self.log.debug("Precondition failed")
                 # PUT rejected in all other cases
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            print "Failed PUT %s" % ex
+            self.log.exception('Failed PUT')
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -367,15 +369,15 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage REPORT request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            #print "REPORT %s" % xml_request
+            #self.log.debug("REPORT %s", xml_request)
             self._answer = xmlutils.report(self.path, xml_request, self._collection)
-            #print "ANSWER %s" % self._answer
+            #self.log.debug("ANSWER %s", self._answer)
             self.send_response(client.MULTI_STATUS)
             self.send_header("Content-Length", len(self._answer))
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            print "Failed REPORT %s", ex
+            self.log.exception("Failed REPORT")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
