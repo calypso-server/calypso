@@ -357,7 +357,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # PUT rejected in all other cases
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            print "Failed PUT %s", ex
+            print "Failed PUT %s" % ex
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
