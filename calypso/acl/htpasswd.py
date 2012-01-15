@@ -29,6 +29,7 @@ supported, but md5 is not (see ``htpasswd`` man page to understand why).
 
 import base64
 import hashlib
+import os.path
 
 from calypso import config
 
@@ -65,6 +66,6 @@ def has_right(owner, user, password):
     return False
 
 
-FILENAME = config.get("acl", "filename")
+FILENAME = os.path.expanduser(config.get("acl", "filename"))
 PERSONAL = config.getboolean("acl", "personal")
 CHECK_PASSWORD = locals()["_%s" % config.get("acl", "encryption")]
