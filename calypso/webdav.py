@@ -37,7 +37,7 @@ import vobject
 import string
 import re
 
-from calypso import config
+from . import config
 
 #
 # Recursive search for 'name' within 'vobject'
