@@ -292,8 +292,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_header(
             "Allow", "DELETE, HEAD, GET, MKCALENDAR, "
             "OPTIONS, PROPFIND, PUT, REPORT")
-        self.send_header("DAV", "1, calendar-access")
-        self.send_header("DAV", "1, addressbook")
+        self.send_header("DAV", "1, access-control, calendar-access, addressbook")
         self.end_headers()
 
     @check_rights
@@ -301,11 +300,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage PROPFIND request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-#            print "PROPFIND %s" % xml_request
+            #print "PROPFIND %s" % xml_request
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
                 self.headers.get("depth", "infinity"))
-#           print "PROPFIND %s\n%s" % (xml_request, self._answer)
+            #print "PROPFIND %s\n%s" % (xml_request, self._answer)
 
             self.send_response(client.MULTI_STATUS)
             self.send_header("DAV", "1, calendar-access")
