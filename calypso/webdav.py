@@ -32,6 +32,7 @@ import time
 import calendar
 import hashlib
 import glob
+import logging
 import tempfile
 import vobject
 import string
@@ -39,6 +40,8 @@ import re
 import logging
 
 from . import config
+
+log = logging.getLogger()
 
 #
 # Recursive search for 'name' within 'vobject'
@@ -73,9 +76,9 @@ class Item(object):
 
         try:
             self.object = vobject.readOne(text)
-        except Exception, ex:
-            print "Parse error in %s %s: %s" % (name, path, ex)
-            raise ex
+        except Exception:
+            self.log.exception("Parse error in %s %s", name, path)
+            raise
 
 
         if not self.object.contents.has_key('x-calypso-name'):
@@ -156,7 +159,7 @@ class Collection(object):
             item = self.read_file(path)
             self.my_items.append(item)
         except Exception, ex:
-            print "Insert %s failed: %s" % (path, ex)
+            self.log.exception("Insert %s failed", path)
             return
 
     def remove_file(self, path):
@@ -178,7 +181,7 @@ class Collection(object):
                 return
         except OSError:
             return
-        print "Scan %s" % self.path
+        self.log.debug("Scan %s", self.path)
         self.mtime = mtime
         filenames = glob.glob(self.pattern)
         newfiles = []
@@ -187,16 +190,16 @@ class Collection(object):
                 if filename == file.path:
                     newfiles.append(file)
                     if not file.is_up_to_date():
-                        print "Changed %s" % filename
+                        self.log.debug("Changed %s", filename)
                         self.scan_file(filename)
                     break
             else:
-                print "New %s" % filename
+                self.log.debug("New %s", filename)
                 newfiles.append(Pathtime(filename))
                 self.insert_file(filename)
         for file in self.files:
             if not file.path in filenames:
-                print "Removed %s" % file.path
+                self.log.debug("Removed %s", file.path)
                 self.remove_file(file.path)
         h = hashlib.sha1()
         for item in self.my_items:
@@ -249,7 +252,7 @@ class Collection(object):
             try:
                 os.utime(self.path, None)
             except Exception, ex:
-                print "Failed to set directory mtime %s" % ex
+                self.log.exception("Failed to set directory mtime")
             
     def write_file(self, item):
         fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
@@ -262,12 +265,12 @@ class Collection(object):
 
     def create_file(self, item):
         # Create directory if necessary
-        print "Add %s" % item.name
+        self.log.debug("Add %s", item.name)
         if not os.path.exists(os.path.dirname(self.path)):
             try:
                 os.makedirs(os.path.dirname(self.path))
             except OSError, ose:
-                print "Failed to make collection directory %s: %s" % (self.path, ose)
+                self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
                 return
 
         try:
@@ -276,22 +279,22 @@ class Collection(object):
             self.git_add(path)
             self.scan_dir()
         except OSError, ex:
-            print "Error writing file: %s" % ex
+            self.log.exception("Error writing file")
         except Exception, ex:
-            print "Caught Exception:\n%s" % (ex,)
-            print "Failed to create %s: %s" % (path,  ex)
+            self.log.exception("Caught Exception")
+            self.log.debug("Failed to create %s: %s", path,  ex)
 
     def destroy_file(self, item):
-        print "Remove %s" % item.name
+        self.log.debug("Remove %s", item.name)
         try:
             os.unlink(item.path)
             self.git_rm(item.path)
             self.scan_dir()
         except Exception, ex:
-            print "Failed to remove %s: %s" % (item.path, ex)
+            self.log.exception("Failed to remove %s", item.path)
 
     def rewrite_file(self, item):
-        print "Change %s" % item.name
+        self.log.debug("Change %s", item.name)
         try:
             new_path = self.write_file(item)
             os.rename(new_path, item.path)
@@ -299,7 +302,7 @@ class Collection(object):
             self.git_change(item.path)
             self.scan_dir()
         except Exception, ex:
-            print "Failed to rewrite %s: %s" % (item.path, ex)
+            self.log.exception("Failed to rewrite %s", item.path)
         
     def get_item(self, name):
         """Get collection item called ``name``."""
@@ -326,18 +329,18 @@ class Collection(object):
         try:
             new_item = Item(text, name, None)
         except Exception, e:
-            print "Cannot create new item: %s" % e
+            self.log.exception("Cannot create new item")
             return False
         if new_item.name not in (item.name for item in self.my_items):
-            print "New item %s" % new_item.name
+            self.log.debug("New item %s", new_item.name)
             self.create_file(new_item)
             return True
-        print "Item %s already present %s" % (new_item.name, self.get_item(new_item.name).path)
+        self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
         return False
 
     def remove(self, name):
         """Remove object named ``name`` from collection."""
-        print "Remove object %s" % name
+        self.log.debug("Remove object %s", name)
         for old_item in self.my_items:
             if old_item.name == name:
                 self.destroy_file(old_item)
@@ -353,7 +356,7 @@ class Collection(object):
         try:
             new_item = Item(text, name, path)
         except Exception:
-            print "Failed to replace %s" % name
+            self.log.exception("Failed to replace %s", name)
             return
 
         if path is not None:
@@ -372,12 +375,12 @@ class Collection(object):
             if old_item:
                 new_item.path = old_item.path
                 self.rewrite_file(new_item)
-                print "Updated %s from %s" % (new_item.name, path)
+                self.log.debug("Updated %s from %s", new_item.name, path)
             else:
                 self.create_file(new_item)
-                print "Added %s from %s" % (new_item.name, path)
+                self.log.debug("Added %s from %s", new_item.name, path)
         except Exception, ex:
-            print "Failed to import: %s: %s" % (ex, path)
+            self.log.exception("Failed to import: %s", path)
             return False
         return True
         
