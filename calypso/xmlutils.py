@@ -36,16 +36,19 @@ import dateutil.rrule
 import dateutil.tz
 import datetime
 import email.utils
+import logging
 import urllib
 
-from calypso import client, config, webdav
+from . import client, config, webdav
 
+__package__ = 'calypso.xmlutils'
 
 NAMESPACES = {
     "C": "urn:ietf:params:xml:ns:caldav",
     "D": "DAV:",
     "CS": "http://calendarserver.org/ns/"}
 
+log = logging.getLogger(__name__)
 
 def _tag(short_name, local):
     """Get XML Clark notation {uri(``short_name``)}``local``."""
@@ -60,7 +63,9 @@ def _response(code):
 def name_from_path(path):
     """Return Calypso item name from ``path``."""
     path_parts = path.strip("/").split("/")
-    return urllib.unquote(path_parts[-1]) if len(path_parts) > 2 else None
+    name =  urllib.unquote(path_parts[-1]) if len(path_parts) > 2 else None
+    log.debug('Path %s results in name: %s', path, name)
+    return name
 
 def delete(path, collection):
     """Read and answer DELETE requests.
@@ -206,6 +211,7 @@ def put(path, webdav_request, collection):
         collection.replace(name, webdav_request)
     else:
         # PUT is adding a new item
+        log.debug('Putting a new item, because name %s is not known', name)
         collection.append(name, webdav_request)
 
 

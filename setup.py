@@ -37,11 +37,16 @@ For further information, please visit the `Calypso Website
 """
 
 import os
-from distutils.core import setup
 from distutils.command.build_scripts import build_scripts
+from setuptools import setup
 
-import calypso
-
+try:
+    from calypso import VERSION
+except ImportError, e:
+    print 'Error importing Calypso, probably dependencies are not installed'
+    print e
+    VERSION = '0.0.1'
+    print 'Assuming version %s' % VERSION
 
 # build_scripts is known to have a lot of public methods
 # pylint: disable=R0904
@@ -61,7 +66,7 @@ class BuildScripts(build_scripts):
 # A new section in the ``NEWS`` file must be added too.
 setup(
     name="Calypso",
-    version=calypso.VERSION,
+    version=VERSION,
     description="CalDAV and CardDAV Server",
     long_description=__doc__,
     author="Keith Packard",
@@ -72,6 +77,7 @@ setup(
     platforms="Any",
     packages=["calypso", "calypso.acl"],
     provides=["calypso"],
+    install_requires=["vobject",],
     scripts=["calypso.py"],
     cmdclass={"build_scripts": BuildScripts},
     keywords=["calendar", "CalDAV"],
