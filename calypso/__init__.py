@@ -348,7 +348,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                     self.rfile.read(int(self.headers["Content-Length"])))
                 xmlutils.put(self.path, webdav_request, self._collection)
                 
-                etag = item.etag
+                # We need to double get this item, because it just got created
+                etag = self._collection.get_item(item_name).etag
                 #self.log.debug("replacement etag %s", etag)
 
                 self.send_response(client.CREATED)
