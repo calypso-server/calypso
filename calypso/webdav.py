@@ -38,6 +38,7 @@ import vobject
 import string
 import re
 import logging
+import subprocess
 
 from . import config
 
@@ -236,18 +237,18 @@ class Collection(object):
 
     def git_add(self, path):
         if self.has_git():
-            command="cd %s && git add %s && git commit -m'Add %s'" % (self.path, os.path.basename(path), "new file")
-            os.system(command)
+            subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
+            subprocess.check_call(["git", "commit", "-m", "Add new file"], cwd=self.path)
     
     def git_rm(self, path):
         if self.has_git():
-            command="cd %s && git rm %s && git commit -m'Remove %s'" % (self.path, os.path.basename(path), "old file")
-            os.system(command)
+            subprocess.check_call(["git", "rm", os.path.basename(path)], cwd=self.path)
+            subprocess.check_call(["git", "commit", "-m", "Remove old file"], cwd=self.path)
 
     def git_change(self, path):
         if self.has_git():
-            command="cd %s && git add %s && git commit -m'Change %s'" % (self.path, os.path.basename(path), "modified file")
-            os.system(command)
+            subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
+            subprocess.check_call(["git", "commit", "-m", "Change modified file"], cwd=self.path)
             # Touch directory so that another running instance will update
             try:
                 os.utime(self.path, None)
