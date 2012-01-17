@@ -64,7 +64,7 @@ def _check(request, function):
 
     # If we have no collection, don't check rights
     if not request._collection:
-        return function(request)
+        return function(request, context={})
 
     authorization = request.headers.get("Authorization", None)
     if authorization:
@@ -75,7 +75,7 @@ def _check(request, function):
         user = password = None
 
     if request.server.acl.has_right(request._collection.owner, user, password):
-        function(request)
+        function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
         request.send_response(client.UNAUTHORIZED)
         request.send_header(
@@ -208,14 +208,14 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     # pylint: disable=C0103
 
     @check_rights
-    def do_GET(self):
+    def do_GET(self, context):
         """Manage GET request."""
         self.do_HEAD()
         if self._answer:
             self.wfile.write(self._answer)
 
     @check_rights
-    def do_HEAD(self):
+    def do_HEAD(self, context):
         """Manage HEAD request."""
         try:
             item_name = xmlutils.name_from_path(self.path)
@@ -260,7 +260,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         return False
 
     @check_rights
-    def do_DELETE(self):
+    def do_DELETE(self, context):
         """Manage DELETE request."""
         try:
             item_name = xmlutils.name_from_path(self.path)
@@ -268,7 +268,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
             if item and self.if_match(item):
                 # No ETag precondition or precondition verified, delete item
-                self._answer = xmlutils.delete(self.path, self._collection)
+                self._answer = xmlutils.delete(self.path, self._collection, context=context)
                 
                 self.send_response(client.NO_CONTENT)
                 self.send_header("Content-Length", len(self._answer))
@@ -283,7 +283,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     @check_rights
-    def do_MKCALENDAR(self):
+    def do_MKCALENDAR(self, context):
         """Manage MKCALENDAR request."""
         self.send_response(client.CREATED)
         self.end_headers()
@@ -298,7 +298,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.end_headers()
 
     @check_rights
-    def do_PROPFIND(self):
+    def do_PROPFIND(self, context):
         """Manage PROPFIND request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
@@ -320,7 +320,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
 
     @check_rights
-    def do_SEARCH(self):
+    def do_SEARCH(self, context):
         """Manage SEARCH request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
@@ -332,7 +332,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
         
     @check_rights
-    def do_PUT(self):
+    def do_PUT(self, context):
         """Manage PUT request."""
         try:
             item_name = xmlutils.name_from_path(self.path)
@@ -345,7 +345,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # Case 3: Item and no Etag precondition: Force modifying item
                 webdav_request = self._decode(
                     self.rfile.read(int(self.headers["Content-Length"])))
-                xmlutils.put(self.path, webdav_request, self._collection)
+                xmlutils.put(self.path, webdav_request, self._collection, context=context)
                 
                 # We need to double get this item, because it just got created
                 etag = self._collection.get_item(item_name).etag
@@ -365,7 +365,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
 
     @check_rights
-    def do_REPORT(self):
+    def do_REPORT(self, context):
         """Manage REPORT request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))

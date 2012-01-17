@@ -67,14 +67,14 @@ def name_from_path(path):
     log.debug('Path %s results in name: %s', path, name)
     return name
 
-def delete(path, collection):
+def delete(path, collection, context):
     """Read and answer DELETE requests.
 
     Read rfc4918-9.6 for info.
 
     """
     # Reading request
-    collection.remove(name_from_path(path))
+    collection.remove(name_from_path(path), context=context)
 
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
@@ -203,16 +203,16 @@ def propfind(path, xml_request, collection, depth):
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
-def put(path, webdav_request, collection):
+def put(path, webdav_request, collection, context):
     """Read PUT requests."""
     name = name_from_path(path)
     if name in (item.name for item in collection.items):
         # PUT is modifying an existing item
-        collection.replace(name, webdav_request)
+        collection.replace(name, webdav_request, context=context)
     else:
         # PUT is adding a new item
         log.debug('Putting a new item, because name %s is not known', name)
-        collection.append(name, webdav_request)
+        collection.append(name, webdav_request, context=context)
 
 
 def match_filter_element(vobject, fe):

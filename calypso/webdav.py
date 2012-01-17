@@ -235,20 +235,42 @@ class Collection(object):
     def has_git(self):
         return os.path.exists(os.path.join(self.path, ".git"))
 
-    def git_add(self, path):
+    def git_commit(self, message, context):
+        args = ["git", "commit"]
+        env = {}
+
+        if "user" in context:
+            # use environment variables instead of --author to avoid git
+            # looking it up in previous commits if it doesn't seem well-formed
+            env['GIT_AUTHOR_NAME'] = context['user'] or "unknown"
+            env['GIT_AUTHOR_EMAIL'] = "%s@webdav"%context['user']
+            # supress a chatty message that we could configure author
+            # information explicitly in the config file. (slicing it in after
+            # the git command as position is important with git arguments)
+            args[1:1] = ["-c", "advice.implicitIdentity=false"]
+        if "user-agent" in context:
+            message += "\n\nUser-Agent: %s"%context['user-agent']
+
+        args.extend(["-m", message])
+
+        print args
+
+        subprocess.check_call(args, cwd=self.path, env=env)
+
+    def git_add(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            subprocess.check_call(["git", "commit", "-m", "Add new file"], cwd=self.path)
+            self.git_commit("Add new file", context=context)
     
-    def git_rm(self, path):
+    def git_rm(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "rm", os.path.basename(path)], cwd=self.path)
-            subprocess.check_call(["git", "commit", "-m", "Remove old file"], cwd=self.path)
+            self.git_commit("Remove old file", context=context)
 
-    def git_change(self, path):
+    def git_change(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            subprocess.check_call(["git", "commit", "-m", "Change modified file"], cwd=self.path)
+            self.git_commit("Change modified file", context=context)
             # Touch directory so that another running instance will update
             try:
                 os.utime(self.path, None)
@@ -264,7 +286,7 @@ class Collection(object):
         self.log.debug('Wrote %s to %s', file, path)
         return path
 
-    def create_file(self, item):
+    def create_file(self, item, context):
         # Create directory if necessary
         self.log.debug("Add %s", item.name)
         if not os.path.exists(os.path.dirname(self.path)):
@@ -277,7 +299,7 @@ class Collection(object):
         try:
             path = self.write_file(item)
             self.scan_file(path)
-            self.git_add(path)
+            self.git_add(path, context=context)
             self.scan_dir()
         except OSError, ex:
             self.log.exception("Error writing file")
@@ -285,22 +307,22 @@ class Collection(object):
             self.log.exception("Caught Exception")
             self.log.debug("Failed to create %s: %s", path,  ex)
 
-    def destroy_file(self, item):
+    def destroy_file(self, item, context):
         self.log.debug("Remove %s", item.name)
         try:
             os.unlink(item.path)
-            self.git_rm(item.path)
+            self.git_rm(item.path, context=context)
             self.scan_dir()
         except Exception, ex:
             self.log.exception("Failed to remove %s", item.path)
 
-    def rewrite_file(self, item):
+    def rewrite_file(self, item, context):
         self.log.debug("Change %s", item.name)
         try:
             new_path = self.write_file(item)
             os.rename(new_path, item.path)
             self.scan_file(item.path)
-            self.git_change(item.path)
+            self.git_change(item.path, context=context)
             self.scan_dir()
         except Exception, ex:
             self.log.exception("Failed to rewrite %s", item.path)
@@ -320,7 +342,7 @@ class Collection(object):
                 items.append(item)
         return items
 
-    def append(self, name, text):
+    def append(self, name, text, context):
         """Append items from ``text`` to collection.
 
         If ``name`` is given, give this name to new items in ``text``.
@@ -334,19 +356,19 @@ class Collection(object):
             return False
         if new_item.name not in (item.name for item in self.my_items):
             self.log.debug("New item %s", new_item.name)
-            self.create_file(new_item)
+            self.create_file(new_item, context=context)
             return True
         self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
         return False
 
-    def remove(self, name):
+    def remove(self, name, context):
         """Remove object named ``name`` from collection."""
         self.log.debug("Remove object %s", name)
         for old_item in self.my_items:
             if old_item.name == name:
-                self.destroy_file(old_item)
+                self.destroy_file(old_item, context=context)
                 
-    def replace(self, name, text):
+    def replace(self, name, text, context):
         """Replace content by ``text`` in objet named ``name`` in collection."""
 
         path=None
@@ -361,10 +383,10 @@ class Collection(object):
             return
 
         if path is not None:
-            self.rewrite_file(new_item)
+            self.rewrite_file(new_item, context=context)
         else:
             self.remove(name)
-            self.append(name, text)
+            self.append(name, text, context=context)
 
     def import_file(self, path):
         """Merge items from ``path`` to collection.
@@ -375,10 +397,10 @@ class Collection(object):
             old_item = self.get_item(new_item.name)
             if old_item:
                 new_item.path = old_item.path
-                self.rewrite_file(new_item)
+                self.rewrite_file(new_item, context={})
                 self.log.debug("Updated %s from %s", new_item.name, path)
             else:
-                self.create_file(new_item)
+                self.create_file(new_item, context={})
                 self.log.debug("Added %s from %s", new_item.name, path)
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
