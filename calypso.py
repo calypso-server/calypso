@@ -47,11 +47,7 @@ import calypso
 import calypso.webdav as webdav
 
 # Get command-line options
-parser = optparse.OptionParser()
-parser.add_option(
-    "-v", "--version", action="store_true",
-    default=False,
-    help="show version and exit")
+parser = optparse.OptionParser(version=calypso.VERSION)
 parser.add_option(
     "-d", "--daemon", action="store_true",
     default=calypso.config.getboolean("server", "daemon"),
@@ -101,11 +97,6 @@ for option in parser.option_list:
     if key:
         value = getattr(options, key)
         calypso.config.set("server", key, value)
-
-# Print version and exit if the option is given
-if options.version:
-    print(calypso.VERSION)
-    sys.exit()
 
 log = logging.getLogger()
 ch = logging.StreamHandler()
