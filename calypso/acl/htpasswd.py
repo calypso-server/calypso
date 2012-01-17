@@ -60,7 +60,7 @@ def has_right(owner, user, password):
     print "checking access for user %s" % user
     for line in open(FILENAME).readlines():
         if line.strip():
-            login, hash_value = line.strip().split(":")
+            login, hash_value = line.strip().split(":", 1)
             if login == user and (not PERSONAL or user == owner):
                 return CHECK_PASSWORD(hash_value, password)
     return False
