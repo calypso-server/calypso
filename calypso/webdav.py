@@ -172,6 +172,32 @@ class Item(object):
             return value.utctimetuple()
         return time.gmtime()
 
+    def __unicode__(self):
+        fn = self.object.getChildValue("fn")
+        if fn:
+            return fn
+
+        if hasattr(self.object, "vevent"):
+            summary = self.object.vevent.getChildValue("summary")
+            dtstart = self.object.vevent.getChildValue("dtstart")
+            if summary and dtstart:
+                return "%s (%s)"%(summary, dtstart)
+            if summary:
+                return summary
+            if dtstart:
+                return str(dtstart)
+
+            uid = self.object.vevent.getChildValue("uid")
+            if uid:
+                return uid
+
+        uid = self.object.getChildValue("uid")
+        if uid:
+            return uid
+
+        return self.name
+
+
 class Pathtime(object):
     """Path name and timestamps"""
 
@@ -284,9 +310,11 @@ class Collection(object):
     def has_git(self):
         return True
 
-    def git_commit(self, message, context):
+    def git_commit(self, context):
         args = ["git", "commit"]
         env = {}
+
+        message = context.get('action', 'other action')
 
         if "user" in context:
             # use environment variables instead of --author to avoid git
@@ -298,28 +326,26 @@ class Collection(object):
             # the git command as position is important with git arguments)
             args[1:1] = ["-c", "advice.implicitIdentity=false"]
         if "user-agent" in context:
-            message += "\n\nUser-Agent: %s"%context['user-agent']
+            message += u"\n\nUser-Agent: %r"%context['user-agent']
 
-        args.extend(["-m", message])
-
-        print args
+        args.extend(["-m", message.encode('utf8')])
 
         subprocess.check_call(args, cwd=self.path, env=env)
 
     def git_add(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Add new file", context=context)
+            self.git_commit(context=context)
     
     def git_rm(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "rm", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Remove old file", context=context)
+            self.git_commit(context=context)
 
     def git_change(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Change modified file", context=context)
+            self.git_commit(context=context)
             # Touch directory so that another running instance will update
             try:
                 os.utime(self.path, None)
@@ -345,6 +371,8 @@ class Collection(object):
                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
                 raise
 
+        context['action'] = u'Add %s'%item
+
         try:
             path = self.write_file(item)
             self.git_add(path, context=context)
@@ -359,6 +387,9 @@ class Collection(object):
 
     def destroy_file(self, item, context):
         self.log.debug("Remove %s", item.name)
+
+        context['action'] = u'Remove %s'%item
+
         try:
             os.unlink(item.path)
             self.git_rm(item.path, context=context)
@@ -369,6 +400,9 @@ class Collection(object):
 
     def rewrite_file(self, item, context):
         self.log.debug("Change %s", item.name)
+
+        context['action'] = u'Modify %s'%item
+
         try:
             new_path = self.write_file(item)
             os.rename(new_path, item.path)
