@@ -230,10 +230,14 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                     self._answer = None
                     self.send_response(client.GONE)
                     return
-            else:
+            elif self._collection:
                 # Get whole collection
                 answer_text = self._collection.text
                 etag = self._collection.etag
+            else:
+                self._answer = None
+                self.send_response(client.NOT_FOUND)
+                return
                 
             try:
                 self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
