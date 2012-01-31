@@ -63,10 +63,6 @@ def _check(request, function):
     # ``_check`` decorator can access ``request`` protected functions
     # pylint: disable=W0212
 
-    # If we have no collection, don't check rights
-    if not request._collection:
-        return function(request, context={})
-
     authorization = request.headers.get("Authorization", None)
     if authorization:
         challenge = authorization.lstrip("Basic").strip().encode("ascii")
@@ -75,7 +71,9 @@ def _check(request, function):
     else:
         user = password = None
 
-    if request.server.acl.has_right(request._collection.owner, user, password):
+    # Also send UNAUTHORIZED if there's no collection. Otherwise one
+    # could probe the server for (non-)existing collections.
+    if request._collection and request.server.acl.has_right(request._collection.owner, user, password):
         function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
         request.send_response(client.UNAUTHORIZED)
