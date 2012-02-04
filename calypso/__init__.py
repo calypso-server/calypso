@@ -35,6 +35,7 @@ should have been included in this package.
 """
 
 import os
+import os.path
 import posixpath
 import base64
 import socket
@@ -113,8 +114,8 @@ class HTTPSServer(HTTPServer):
         self.socket = ssl.wrap_socket(
             socket.socket(self.address_family, self.socket_type),
             server_side=True,
-            certfile=config.get("server", "certificate"),
-            keyfile=config.get("server", "key"),
+            certfile=os.path.expanduser(config.get("server", "certificate")),
+            keyfile=os.path.expanduser(config.get("server", "key")),
             ssl_version=ssl.PROTOCOL_SSLv23)
         self.server_bind()
         self.server_activate()
