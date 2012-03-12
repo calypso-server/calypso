@@ -71,9 +71,13 @@ def _check(request, function):
     else:
         user = password = None
 
+    owner = None
+    if request._collection:
+        owner = request._collection.owner
+
     # Also send UNAUTHORIZED if there's no collection. Otherwise one
     # could probe the server for (non-)existing collections.
-    if request._collection and request.server.acl.has_right(request._collection.owner, user, password):
+    if request.server.acl.has_right(owner, user, password):
         function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
         request.send_response(client.UNAUTHORIZED)
