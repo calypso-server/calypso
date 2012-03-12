@@ -127,6 +127,12 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     """HTTP requests handler for WebDAV collections."""
     _encoding = config.get("encoding", "request")
     log = logging.getLogger()
+    log.setLevel(logging.WARN)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.WARN)
+    formatter = logging.Formatter("%(message)s")
+    ch.setFormatter (formatter)
+    log.addHandler(ch)
 
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
