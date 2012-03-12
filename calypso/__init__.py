@@ -315,11 +315,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage PROPFIND request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            #self.log.debug("PROPFIND %s", xml_request)
+            self.log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
                 self.headers.get("depth", "infinity"))
-            #self.log.debug("PROPFIND %s\n%s", xml_request, self._answer)
+            self.log.debug("PROPFIND ANSWER %s", self._answer)
 
             self.send_response(client.MULTI_STATUS)
             self.send_header("DAV", "1, calendar-access")
@@ -382,9 +382,9 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage REPORT request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            #self.log.debug("REPORT %s", xml_request)
+            self.log.debug("REPORT %s %s", self.path, xml_request)
             self._answer = xmlutils.report(self.path, xml_request, self._collection)
-            #self.log.debug("ANSWER %s", self._answer)
+            self.log.debug("REPORT ANSWER %s", self._answer)
             self.send_response(client.MULTI_STATUS)
             self.send_header("Content-Length", len(self._answer))
             self.end_headers()
