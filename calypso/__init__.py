@@ -185,7 +185,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         # ``normpath`` should clean malformed and malicious request paths
         attributes = posixpath.normpath(self.path.strip("/")).split("/")
         if len(attributes) >= 2:
-            path = '/'.join(attributes[:-1])
+            path = "%s/%s" % (attributes[0], attributes[1])
             if not path in CollectionHTTPHandler.collections:
                 CollectionHTTPHandler.collections[path] = webdav.Collection(path)
             return CollectionHTTPHandler.collections[path]
