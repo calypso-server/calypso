@@ -101,9 +101,20 @@ if options.version:
     print(calypso.VERSION)
     sys.exit()
 
+log = logging.getLogger()
+ch = logging.StreamHandler()
+
 # Print version and exit if the option is given
 if options.debug:
+    log.setLevel(logging.DEBUG)
+    ch.setLevel(logging.DEBUG)
     logging.basicConfig(level=logging.DEBUG)
+    log.debug("enable debugging")
+else:
+    log.setLevel(logging.WARN)
+    ch.setLevel(logging.WARN)
+    logging.basicConfig(level=logging.WARN)
+    
 
 # Run import if requested
 if options.import_dest:

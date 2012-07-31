@@ -57,6 +57,12 @@ except ImportError:
 
 from . import acl, config, webdav, xmlutils, paths
 
+log = logging.getLogger()
+ch = logging.StreamHandler()
+formatter = logging.Formatter("%(message)s")
+ch.setFormatter (formatter)
+log.addHandler(ch)
+
 VERSION = "0.5"
 
 def _check(request, function):
@@ -127,13 +133,6 @@ class HTTPSServer(HTTPServer):
 class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     """HTTP requests handler for WebDAV collections."""
     _encoding = config.get("encoding", "request")
-    log = logging.getLogger()
-    log.setLevel(logging.WARN)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.WARN)
-    formatter = logging.Formatter("%(message)s")
-    ch.setFormatter (formatter)
-    log.addHandler(ch)
 
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
@@ -172,7 +171,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.wfile.flush() #actually send the response if not already done.
         except socket.timeout as e:
             #a read or a write timed out.  Discard this connection
-            self.log_error("Request timed out: %r", e)
+            log.error("Request timed out: %r", e)
             self.close_connection = 1
             return
 
@@ -259,7 +258,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("ETag", etag)
             self.end_headers()
         except Exception, ex:
-            self.log.exception("Failed HEAD")
+            log.exception("Failed HEAD")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -295,7 +294,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # No item or ETag precondition not verified, do not delete item
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            self.log.exception("Failed DELETE")
+            log.exception("Failed DELETE")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -319,11 +318,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage PROPFIND request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            self.log.debug("PROPFIND %s", xml_request)
+            log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
                 self.headers.get("depth", "infinity"))
-            self.log.debug("PROPFIND ANSWER %s", self._answer)
+            log.debug("PROPFIND ANSWER %s", self._answer)
 
             self.send_response(client.MULTI_STATUS)
             self.send_header("DAV", "1, calendar-access")
@@ -332,7 +331,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            self.log.exception("Failed PROPFIND")
+            log.exception("Failed PROPFIND")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -344,7 +343,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_response(client.NO_CONTENT)
             self.end_headers()
         except Exception, ex:
-            self.log.exception("Failed SEARCH")
+            log.exception("Failed SEARCH")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
         
@@ -366,17 +365,17 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 
                 # We need to double get this item, because it just got created
                 etag = self._collection.get_item(item_name).etag
-                #self.log.debug("replacement etag %s", etag)
+                #log.debug("replacement etag %s", etag)
 
                 self.send_response(client.CREATED)
                 self.send_header("ETag", etag)
                 self.end_headers()
             else:
-                #self.log.debug("Precondition failed")
+                #log.debug("Precondition failed")
                 # PUT rejected in all other cases
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            self.log.exception('Failed PUT')
+            log.exception('Failed PUT')
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -386,15 +385,15 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage REPORT request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            self.log.debug("REPORT %s %s", self.path, xml_request)
+            log.debug("REPORT %s %s", self.path, xml_request)
             self._answer = xmlutils.report(self.path, xml_request, self._collection)
-            self.log.debug("REPORT ANSWER %s", self._answer)
+            log.debug("REPORT ANSWER %s", self._answer)
             self.send_response(client.MULTI_STATUS)
             self.send_header("Content-Length", len(self._answer))
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            self.log.exception("Failed REPORT")
+            log.exception("Failed REPORT")
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
