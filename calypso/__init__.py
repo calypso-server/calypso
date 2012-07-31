@@ -183,7 +183,6 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def _collection(self):
         """The ``webdav.Collection`` object corresponding to the given path."""
         path = paths.collection_from_path(self.path)
-        print "_collection %s = %s" % (self.path, path)
         if not path:
             return None
         if not path in CollectionHTTPHandler.collections:
