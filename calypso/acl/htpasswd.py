@@ -30,9 +30,11 @@ supported, but md5 is not (see ``htpasswd`` man page to understand why).
 import base64
 import hashlib
 import os.path
+import logging
 
 from calypso import config
 
+log = logging.getLogger()
 
 def _plain(hash_value, password):
     """Check if ``hash_value`` and ``password`` match using plain method."""
@@ -57,6 +59,7 @@ def _sha1(hash_value, password):
 
 def has_right(owner, user, password):
     """Check if ``user``/``password`` couple is valid."""
+    log.debug("owner %s user %s", owner, user)
     for line in open(FILENAME).readlines():
         if line.strip():
             login, hash_value = line.strip().split(":", 1)
