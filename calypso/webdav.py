@@ -139,10 +139,10 @@ class Item(object):
     @property
     def file_prefix(self):
         if self.is_vcard:
-            return 'card'
+            return 'card-'
         if self.is_vcal:
-            return 'cal'
-        return 'res'
+            return 'cal-'
+        return 'res-'
 
     @property
     def file_extension(self):
