@@ -43,6 +43,8 @@ import time
 import datetime
 import email.utils
 import logging
+import rfc822
+import urllib
 
 # Manage Python2/3 different modules
 # pylint: disable=F0401
@@ -53,8 +55,7 @@ except ImportError:
     import BaseHTTPServer as server
 # pylint: enable=F0401
 
-from . import acl, config, webdav, xmlutils
-
+from . import acl, config, webdav, xmlutils, paths
 
 VERSION = "0.5"
 
@@ -181,14 +182,13 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @property
     def _collection(self):
         """The ``webdav.Collection`` object corresponding to the given path."""
-        # ``self.path`` must be something like a posix path
-        # ``normpath`` should clean malformed and malicious request paths
-        attributes = posixpath.normpath(self.path.strip("/")).split("/")
-        if len(attributes) >= 2:
-            path = "%s/%s" % (attributes[0], attributes[1])
-            if not path in CollectionHTTPHandler.collections:
-                CollectionHTTPHandler.collections[path] = webdav.Collection(path)
-            return CollectionHTTPHandler.collections[path]
+        path = paths.collection_from_path(self.path)
+        print "_collection %s = %s" % (self.path, path)
+        if not path:
+            return None
+        if not path in CollectionHTTPHandler.collections:
+            CollectionHTTPHandler.collections[path] = webdav.Collection(path)
+        return CollectionHTTPHandler.collections[path]
 
     def _decode(self, text):
         """Try to decode text according to various parameters."""
@@ -227,7 +227,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_HEAD(self, context):
         """Manage HEAD request."""
         try:
-            item_name = xmlutils.name_from_path(self.path)
+            item_name = paths.resource_from_path(self.path)
             if item_name:
                 # Get collection item
                 item = self._collection.get_item(item_name)
@@ -276,7 +276,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_DELETE(self, context):
         """Manage DELETE request."""
         try:
-            item_name = xmlutils.name_from_path(self.path)
+            item_name = paths.resource_from_path(self.path)
             item = self._collection.get_item(item_name)
 
             if item and self.if_match(item):
@@ -348,7 +348,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PUT(self, context):
         """Manage PUT request."""
         try:
-            item_name = xmlutils.name_from_path(self.path)
+            item_name = paths.resource_from_path(self.path)
             item = self._collection.get_item(item_name)
             if not item or self.if_match(item):
 

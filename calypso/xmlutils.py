@@ -38,8 +38,9 @@ import datetime
 import email.utils
 import logging
 import urllib
+import os.path
 
-from . import client, config, webdav
+from . import client, config, webdav, paths
 
 __package__ = 'calypso.xmlutils'
 
@@ -59,14 +60,6 @@ def _response(code):
     """Return full W3C names from HTTP status codes."""
     return "HTTP/1.1 %i %s" % (code, client.responses[code])
 
-
-def name_from_path(path):
-    """Return Calypso item name from ``path``."""
-    path_parts = path.strip("/").split("/")
-    name =  urllib.unquote(path_parts[-1]) if len(path_parts) > 2 else None
-    log.debug('Path %s results in name: %s', path, name)
-    return name
-
 def delete(path, collection, context):
     """Read and answer DELETE requests.
 
@@ -74,7 +67,7 @@ def delete(path, collection, context):
 
     """
     # Reading request
-    collection.remove(name_from_path(path), context=context)
+    collection.remove(paths.resource_from_path(path), context=context)
 
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
@@ -98,6 +91,10 @@ def propfind(path, xml_request, collection, depth):
     Read rfc4918-9.1 for info.
 
     """
+
+    item_name = paths.resource_from_path(path)
+    collection_name = paths.collection_from_path(path)
+
     # Reading request
     root = ET.fromstring(xml_request)
 
@@ -106,20 +103,36 @@ def propfind(path, xml_request, collection, depth):
         prop_list = prop_element.getchildren()
         props = [prop.tag for prop in prop_list]
     else:
-        props = None
+        props = [_tag("D", "resourcetype"),
+                 _tag("D", "owner"),
+                 _tag("D", "getcontenttype"),
+                 _tag("D", "getetag"),
+                 _tag("D", "principal-collection-set"),
+                 _tag("C", "supported-calendar-component-set"),
+                 _tag("D", "supported-report-set"),
+                 _tag("D", "current-user-privilege-set"),
+                 _tag("D", "getcontentlength"),
+                 _tag("D", "getlastmodified")]
 
     
     # Writing answer
     multistatus = ET.Element(_tag("D", "multistatus"))
 
     if collection:
-        if depth == "0":
-            items = [collection]
+        if item_name:
+            item = collection.get_item(item_name)
+            print "item_name %s item %s" % (item_name, item)
+            if item:
+                items = [item]
+            else:
+                items = []
         else:
-            # depth is 1, infinity or not specified
-            # we limit ourselves to depth == 1
-            items = [collection] + collection.items
-#            items = [collection]
+            if depth == "0":
+                items = [collection]
+            else:
+                # depth is 1, infinity or not specified
+                # we limit ourselves to depth == 1
+                items = [collection] + collection.items
     else:
         items = []
 
@@ -130,7 +143,7 @@ def propfind(path, xml_request, collection, depth):
         multistatus.append(response)
 
         href = ET.Element(_tag("D", "href"))
-        href.text = path if is_collection else path + item.name
+        href.text = collection_name if is_collection else "/".join([collection_name, item.name])
         response.append(href)
 
         propstat = ET.Element(_tag("D", "propstat"))
@@ -205,7 +218,7 @@ def propfind(path, xml_request, collection, depth):
 
 def put(path, webdav_request, collection, context):
     """Read PUT requests."""
-    name = name_from_path(path)
+    name = paths.resource_from_path(path)
     if name in (item.name for item in collection.items):
         # PUT is modifying an existing item
         collection.replace(name, webdav_request, context=context)
@@ -312,10 +325,10 @@ def report(path, xml_request, collection):
 
     for hreference in hreferences:
         # Check if the reference is an item or a collection
-        name = name_from_path(hreference)
+        name = paths.resource_from_path(hreference)
         if name:
             # Reference is an item
-            path = "/".join(hreference.split("/")[:-1]) + "/"
+            path = paths.collection_from_path(hreference) + "/"
             items = (item for item in collection.items if item.name == name)
         else:
             # Reference is a collection

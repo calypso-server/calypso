@@ -39,10 +39,9 @@ import string
 import re
 import logging
 import subprocess
+import urllib
 
-from . import config
-
-log = logging.getLogger()
+from . import config, paths
 
 #
 # Recursive search for 'name' within 'vobject'
@@ -212,11 +211,9 @@ class Collection(object):
         """Initialize the collection with ``cal`` and ``user`` parameters."""
         
         self.log = logging.getLogger(__name__)
-        folder = os.path.expanduser(config.get("storage", "folder"))
-
         self.encoding = "utf-8"
-        self.owner = path.split("/")[0]
-        self.path = os.path.join(folder, path.replace("/", os.path.sep))
+        self.owner = paths.url_to_owner(path)
+        self.path = paths.url_to_file(path)
         self.pattern = os.path.join(self.path, "*")
         self.files = []
         self.my_items = []
