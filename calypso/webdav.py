@@ -109,6 +109,50 @@ class Item(object):
         self.etag = hashlib.sha1(text).hexdigest()
 
     @property
+    def is_vcard(self):
+        """Whether this item is a vcard entry"""
+        if self.object.name == 'VCARD':
+            return True
+        if self.object.name == 'VEVENT':
+            return False
+        for child in self.object.getChildren():
+            if child.name == 'VCARD':
+                return True
+            if child.name == 'VEVENT':
+                return False
+        return False
+
+    @property
+    def is_vcal(self):
+        """Whether this item is a vcard entry"""
+        if self.object.name == 'VCARD':
+            return False
+        if self.object.name == 'VEVENT':
+            return True
+        for child in self.object.getChildren():
+            if child.name == 'VCARD':
+                return False
+            if child.name == 'VEVENT':
+                return True
+        return False
+
+    @property
+    def file_prefix(self):
+        if self.is_vcard:
+            return 'card'
+        if self.is_vcal:
+            return 'cal'
+        return 'res'
+
+    @property
+    def file_extension(self):
+        if self.is_vcard:
+            return '.vcf'
+        if self.is_vcal:
+            return '.ics'
+        return '.dav'
+
+    @property
     def text(self):
         """Item text.
 
@@ -275,7 +319,7 @@ class Collection(object):
                 self.log.exception("Failed to set directory mtime")
             
     def write_file(self, item):
-        fd, path = tempfile.mkstemp(suffix=".ics", prefix="cal", dir=self.path)
+        fd, path = tempfile.mkstemp(item.file_extension, item.file_prefix, dir=self.path)
         self.log.debug('Trying to write to %s', path)
         file = os.fdopen(fd, 'w')
         file.write(item.text.encode('utf-8'))
