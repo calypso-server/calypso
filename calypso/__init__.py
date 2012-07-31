@@ -304,7 +304,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_response(client.CREATED)
         self.end_headers()
 
-    def do_OPTIONS(self):
+    @check_rights
+    def do_OPTIONS(self, context):
         """Manage OPTIONS request."""
         self.send_response(client.OK)
         self.send_header(
