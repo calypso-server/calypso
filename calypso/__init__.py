@@ -266,9 +266,14 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
     def if_match(self, item):
         header = self.headers.get("If-Match", item.etag)
+        header = rfc822.unquote(header)
         if header == item.etag:
             return True
-        if header == '"' + item.etag + '"':
+        quoted = '"' + item.etag + '"'
+        if header == quoted:
+            return True
+        extraquoted = rfc822.quote(quoted)
+        if header == extraquoted:
             return True
         return False
 
