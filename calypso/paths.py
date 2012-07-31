@@ -29,8 +29,6 @@ from . import config
 
 log = logging.getLogger()
 
-print "loaded paths.py"
-
 #
 # Various URL manipulation routines
 #
@@ -38,7 +36,7 @@ print "loaded paths.py"
 # The first element of the URL is always the object owner
 
 def url_to_owner(path):
-    return path.split("/")[0]
+    return path.strip("/").split("/")[0]
 
 #
 # Given a URL, convert it to an absolute path name by
@@ -47,7 +45,7 @@ def url_to_owner(path):
 
 def url_to_file(url):
     folder = os.path.expanduser(config.get("storage", "folder"))
-    tail = urllib.url2pathname(url.lstrip("/"))
+    tail = urllib.url2pathname(url.strip("/"))
     file = os.path.join(folder, tail)
     return file
 
@@ -68,7 +66,7 @@ def is_collection(url):
 def parent_url(path):
     path_parts = path.strip("/").split("/")
     path_parent = path_parts[0:len(path_parts)-1]
-    new_path = "/".join(path_parent)
+    new_path = "/" + "/".join(path_parent)
     return new_path
 
 #
@@ -104,7 +102,7 @@ def collection_from_path(path):
             return None
 
     # unquote, strip off any trailing slash, then clean up /../ and // entries
-    collection = urllib.unquote(collection).rstrip("/")
+    collection = "/" + urllib.unquote(collection).strip("/")
 
     log.debug('Path %s results in collection: %s', path, collection)
     return collection
