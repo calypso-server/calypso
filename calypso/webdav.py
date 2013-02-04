@@ -339,7 +339,6 @@ class Collection(object):
 
         try:
             path = self.write_file(item)
-            self.scan_file(path)
             self.git_add(path, context=context)
             self.scan_dir()
         except OSError, ex:
