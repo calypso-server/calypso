@@ -235,6 +235,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 else:
                     self._answer = None
                     self.send_response(client.GONE)
+                    self.end_headers()
                     return
             elif self._collection:
                 # Get whole collection
@@ -243,6 +244,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             else:
                 self._answer = None
                 self.send_response(client.NOT_FOUND)
+                self.end_headers()
                 return
                 
             try:
@@ -293,6 +295,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             else:
                 # No item or ETag precondition not verified, do not delete item
                 self.send_response(client.PRECONDITION_FAILED)
+                self.end_headers()
         except Exception, ex:
             log.exception("Failed DELETE")
             self.send_response(client.BAD_REQUEST)
