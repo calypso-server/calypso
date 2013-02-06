@@ -46,6 +46,7 @@ __package__ = 'calypso.xmlutils'
 
 NAMESPACES = {
     "C": "urn:ietf:params:xml:ns:caldav",
+    "A": "urn:ietf:params:xml:ns:carddav",
     "D": "DAV:",
     "CS": "http://calendarserver.org/ns/"}
 
@@ -157,6 +158,8 @@ def propfind(path, xml_request, collection, depth):
             if tag == _tag("D", "resourcetype") and is_collection:
                 tag = ET.Element(_tag("C", "calendar"))
                 element.append(tag)
+                tag = ET.Element(_tag("A", "addressbook"))
+                element.append(tag)
                 tag = ET.Element(_tag("D", "collection"))
                 element.append(tag)
             elif tag == _tag("D", "owner"):
@@ -181,7 +184,7 @@ def propfind(path, xml_request, collection, depth):
                 _tag("D", "principal-collection-set"),
                 _tag("C", "calendar-user-address-set"),
                 _tag("C", "calendar-home-set"),
-                _tag("C", "addressbook-home-set")):
+                _tag("A", "addressbook-home-set")):
                 tag = ET.Element(_tag("D", "href"))
                 tag.text = path
                 element.append(tag)

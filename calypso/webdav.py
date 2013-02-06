@@ -65,6 +65,7 @@ class Item(object):
     def __init__(self, text, name=None, path=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
+        self.log = logging.getLogger(__name__)
         try:
             text = text.encode('utf8')
         except UnicodeDecodeError:
