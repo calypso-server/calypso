@@ -137,6 +137,10 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     # Decorator checking rights before performing request
     check_rights = lambda function: lambda request: _check(request, function)
         
+    # We do set Content-Length on all replies, so we can use HTTP/1.1
+    # with multiple requests (as desired by the android CalDAV sync program
+    protocol_version = 'HTTP/1.1'
+
     def address_string(self):
         return str(self.client_address[0])
 
