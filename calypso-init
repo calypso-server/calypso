@@ -1,28 +1,23 @@
-#! /bin/sh
+#!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          skeleton
-# Required-Start:    $remote_fs $syslog
-# Required-Stop:     $remote_fs $syslog
+# Provides:          calypso
+# Required-Start:    $network $remote_fs
+# Required-Stop:     $remote_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Example initscript
-# Description:       This file should be used to construct scripts to be
-#                    placed in /etc/init.d.
+# Short-Description: CalDAV/CardDAV server
+# Description:       Calendar and Contact server over WebDAV
+#                    using the CalDAV and CardDAV protocols
 ### END INIT INFO
 
 # Author: Keith Packard <keithp@keithp.com>
-#
-# Please remove the "Author" lines above and replace them
-# with your own name if you copy and modify this script.
-
-# Do NOT "set -e"
+# Author: Joe Nahmias <jello@debian.org>
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/sbin:/usr/sbin:/bin:/usr/bin:/local/bin
-DESC="Calypso Server"
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Calypso CalDAV Server"
 NAME=calypso
-DAEMON=/local/bin/$NAME
-DAEMON_ARGS=""
+DAEMON=/usr/sbin/$NAME
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
@@ -41,6 +36,19 @@ SCRIPTNAME=/etc/init.d/$NAME
 . /lib/lsb/init-functions
 
 #
+# Check whether daemon starting is enabled
+#
+check_start_daemon() {
+        if [ "$DISABLE_CALPYSO" = "yes" ]; then
+                [ "$VERBOSE" != no ] && \
+                        log_warning_msg "Not starting calypso, disabled via /etc/default/calypso"
+                return 1
+        else
+                return 0
+        fi
+}
+
+#
 # Function that starts the daemon/service
 #
 do_start()
@@ -52,7 +60,7 @@ do_start()
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -- \
-		$DAEMON_ARGS \
+		$CALYPSO_OPTS \
 		|| return 2
 	# Add code here, if necessary, that waits for the process to be ready
 	# to handle requests from services started subsequently which depend
@@ -100,6 +108,7 @@ do_reload() {
 
 case "$1" in
   start)
+	check_start_daemon || exit 0
 	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
 	do_start
 	case "$?" in
