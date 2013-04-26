@@ -37,6 +37,7 @@ arguments.
 # TODO: Manage smart and configurable logs
 
 import daemon
+from daemon import pidlockfile
 import logging
 import optparse
 import os
@@ -87,6 +88,10 @@ parser.add_option(
     "-g", "--debug", action="store_true",
     default=False,
     help="enable debug logging")
+parser.add_option(
+    "-P", "--pid-file", dest="pidfile",
+    default=calypso.config.get("server", "pidfile"),
+    help="set location of process-id file")
     
 (options, args) = parser.parse_args()
 
@@ -151,6 +156,9 @@ if not options.daemon:
 # Otherwise, daemonize Calypso
 context = daemon.DaemonContext()
 context.umask = 0o002
+if options.pidfile:
+    # Generate a pidfile where requested
+    context.pidfile = pidlockfile.PIDLockFile(options.pidfile)
 with context:
     run_server()
 

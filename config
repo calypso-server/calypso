@@ -18,6 +18,8 @@ ssl = False
 certificate = /etc/apache2/ssl/server.crt
 # SSL private key (if needed)
 key = /etc/apache2/ssl/server.key
+# File to store the PID of the running calypso instance
+# pidfile = /var/run/calypso.pid
 
 [encoding]
 # Encoding for responding requests
