@@ -36,10 +36,11 @@ arguments.
 
 # TODO: Manage smart and configurable logs
 
+import daemon
 import logging
+import optparse
 import os
 import sys
-import optparse
 
 import calypso
 import calypso.webdav as webdav
@@ -132,14 +133,22 @@ if options.import_dest:
     else:
         sys.exit(1)
 
-# Fork if Calypso is launched as daemon
-if options.daemon:
-    if os.fork():
-        sys.exit()
-    sys.stdout = sys.stderr = open(os.devnull, "w")
+def run_server():
+    # Launch server
+    server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
+    server = server_class(
+        (options.host, options.port), calypso.CollectionHTTPHandler)
+    server.serve_forever(poll_interval=10)
 
-# Launch server
-server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
-server = server_class(
-    (options.host, options.port), calypso.CollectionHTTPHandler)
-server.serve_forever(poll_interval=10)
+# If foreground execution is requested, just run the server
+if not options.daemon:
+    run_server()
+    sys.exit(0)
+
+# Otherwise, daemonize Calypso
+context = daemon.DaemonContext()
+context.umask = 0o002
+with context:
+    run_server()
+
+# vim: set ts=4 sw=4 et si :

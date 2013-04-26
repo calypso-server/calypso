@@ -1,1 +1,2 @@
+daemon==1.5.5
 vobject==0.8.1c
