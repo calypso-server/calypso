@@ -134,11 +134,14 @@ if options.import_dest:
         sys.exit(1)
 
 def run_server():
-    # Launch server
-    server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
-    server = server_class(
-        (options.host, options.port), calypso.CollectionHTTPHandler)
-    server.serve_forever(poll_interval=10)
+    try:
+        # Launch server
+        server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
+        server = server_class(
+            (options.host, options.port), calypso.CollectionHTTPHandler)
+        server.serve_forever(poll_interval=10)
+    except KeyboardInterrupt:
+        server.socket.close()
 
 # If foreground execution is requested, just run the server
 if not options.daemon:
