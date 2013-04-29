@@ -347,7 +347,7 @@ def report(path, xml_request, collection):
             multistatus.append(response)
 
             href = ET.Element(_tag("D", "href"))
-            href.text = path + item.name
+            href.text = path.rstrip('/') + '/' + item.name
             response.append(href)
 
             propstat = ET.Element(_tag("D", "propstat"))
