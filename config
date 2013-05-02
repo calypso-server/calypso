@@ -29,7 +29,7 @@ stock = utf-8
 
 [acl]
 # Access method
-# Value: fake | htpasswd
+# Value: fake | htpasswd | pam
 type = fake
 # Personal calendars only available for logged in users (if needed)
 personal = False
@@ -38,6 +38,8 @@ filename = /etc/calypso/users
 # Htpasswd encryption method (if needed)
 # Value: plain | sha1 | crypt
 encryption = crypt
+# PAM service to use for authentication
+# pam_service = passwd
 
 [storage]
 # Folder for storing local calendars,

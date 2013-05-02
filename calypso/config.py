@@ -54,7 +54,9 @@ INITIAL_CONFIG = {
         "type": "fake",
         "personal": "False",
         "filename": "/etc/calypso/users",
-        "encryption": "crypt"},
+        "encryption": "crypt",
+        "pam_service": "passwd",
+    },
     "storage": {
         "folder": os.path.expanduser("~/.config/calypso/calendars")}}
 
