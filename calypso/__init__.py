@@ -380,7 +380,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 xmlutils.put(self.path, webdav_request, self._collection, context=context)
                 
                 new_name = paths.resource_from_path(self.path)
-                print "item_name %s new_name %s" % (item_name, new_name)
+                log.debug("item_name %s new_name %s", item_name, new_name)
                 # We need to double get this item, because it just got created
                 etag = self._collection.get_item(new_name).etag
                 #log.debug("replacement etag %s", etag)
