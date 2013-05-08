@@ -37,7 +37,6 @@ import tempfile
 import vobject
 import string
 import re
-import logging
 import subprocess
 import urllib
 
