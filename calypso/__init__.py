@@ -45,6 +45,7 @@ import email.utils
 import logging
 import rfc822
 import urllib
+import ssl
 
 # Manage Python2/3 different modules
 # pylint: disable=F0401
@@ -141,6 +142,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     # with multiple requests (as desired by the android CalDAV sync program
     protocol_version = 'HTTP/1.1'
 
+    timeout = 20
+
     def address_string(self):
         return str(self.client_address[0])
 
@@ -176,6 +179,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         except socket.timeout as e:
             #a read or a write timed out.  Discard this connection
             log.error("Request timed out: %r", e)
+            self.close_connection = 1
+            return
+        except ssl.SSLError, x:
+            #an io error. Discard this connection
+            log.error("SSL request error: %r", x.args[0])
             self.close_connection = 1
             return
 
