@@ -302,6 +302,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 
                 self.send_response(client.NO_CONTENT)
                 self.send_header("Content-Length", len(self._answer))
+                self.send_header("Content-Type", "text/xml")
                 self.end_headers()
                 self.wfile.write(self._answer)
             else:
@@ -408,6 +409,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.debug("REPORT ANSWER %s", self._answer)
             self.send_response(client.MULTI_STATUS)
             self.send_header("Content-Length", len(self._answer))
+            self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
