@@ -112,11 +112,6 @@ class HTTPSServer(HTTPServer):
 
     def __init__(self, address, handler):
         """Create server by wrapping HTTP socket in an SSL socket."""
-        # Fails with Python 2.5, import if needed
-        # pylint: disable=F0401
-        import ssl
-        # pylint: enable=F0401
-
         HTTPServer.__init__(self, address, handler)
         self.socket = ssl.wrap_socket(
             socket.socket(self.address_family, self.socket_type),
