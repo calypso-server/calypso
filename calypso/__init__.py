@@ -36,15 +36,12 @@ should have been included in this package.
 
 import os
 import os.path
-import posixpath
 import base64
 import socket
 import time
-import datetime
 import email.utils
 import logging
 import rfc822
-import urllib
 import ssl
 
 # Manage Python2/3 different modules

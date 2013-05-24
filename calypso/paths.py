@@ -22,7 +22,6 @@
 import urllib
 import os
 import os.path
-import posixpath
 import logging
 
 from . import config
