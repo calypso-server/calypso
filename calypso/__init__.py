@@ -89,6 +89,7 @@ def _check(request, function):
         function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
         request.send_response(client.UNAUTHORIZED)
+        request.send_header("Content-Length", 0)
         request.send_header(
             "WWW-Authenticate",
             "Basic realm=\"Calypso Server - Password Required\"")
