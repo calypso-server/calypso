@@ -387,6 +387,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 #log.debug("replacement etag %s", etag)
 
                 self.send_response(client.CREATED)
+                self.send_header("Content-Length", 0)
                 self.send_header("ETag", etag)
                 self.end_headers()
             else:
