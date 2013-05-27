@@ -391,7 +391,6 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_SEARCH(self, context):
         """Manage SEARCH request."""
         try:
-            xml_request = self.xml_request
             self.send_calypso_response(client.NO_CONTENT, 0)
             self.end_headers()
         except Exception, ex:
