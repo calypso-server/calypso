@@ -328,6 +328,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             "Allow", "DELETE, HEAD, GET, MKCALENDAR, "
             "OPTIONS, PROPFIND, PUT, REPORT")
         self.send_header("DAV", "1, access-control, calendar-access, addressbook")
+        self.send_header("Content-Length", 0)
         self.end_headers()
 
     @check_rights
