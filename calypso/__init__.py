@@ -236,6 +236,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @check_rights
     def do_HEAD(self, context):
         """Manage HEAD request."""
+        self._answer = ''
         try:
             item_name = paths.resource_from_path(self.path)
             if item_name and self._collection:
@@ -245,7 +246,6 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                     answer_text = item.text
                     etag = item.etag
                 else:
-                    self._answer = None
                     self.send_response(client.GONE)
                     self.end_headers()
                     return
@@ -254,7 +254,6 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 answer_text = self._collection.text
                 etag = self._collection.etag
             else:
-                self._answer = None
                 self.send_response(client.NOT_FOUND)
                 self.end_headers()
                 return
