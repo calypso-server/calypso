@@ -238,7 +238,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage HEAD request."""
         try:
             item_name = paths.resource_from_path(self.path)
-            if item_name:
+            if item_name and self._collection:
                 # Get collection item
                 item = self._collection.get_item(item_name)
                 if item:
