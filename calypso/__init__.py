@@ -272,7 +272,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("ETag", etag)
             self.end_headers()
         except Exception, ex:
-            log.exception("Failed HEAD")
+            log.exception("Failed HEAD for %s", self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -310,7 +310,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.send_response(client.PRECONDITION_FAILED)
                 self.end_headers()
         except Exception, ex:
-            log.exception("Failed DELETE")
+            log.exception("Failed DELETE for %s", self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -348,7 +348,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            log.exception("Failed PROPFIND")
+            log.exception("Failed PROPFIND for %s", self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -360,7 +360,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_response(client.NO_CONTENT)
             self.end_headers()
         except Exception, ex:
-            log.exception("Failed SEARCH")
+            log.exception("Failed SEARCH for %s", self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
         
@@ -394,7 +394,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # PUT rejected in all other cases
                 self.send_response(client.PRECONDITION_FAILED)
         except Exception, ex:
-            log.exception('Failed PUT')
+            log.exception('Failed PUT for %s', self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
@@ -413,7 +413,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
-            log.exception("Failed REPORT")
+            log.exception("Failed REPORT for %s", self.path)
             self.send_response(client.BAD_REQUEST)
             self.end_headers()
 
