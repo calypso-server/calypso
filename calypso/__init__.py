@@ -230,50 +230,63 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     @check_rights
     def do_GET(self, context):
         """Manage GET request."""
-        self.do_HEAD()
-        if self._answer:
-            self.wfile.write(self._answer)
+        self.do_get_head(context, True)
 
     @check_rights
     def do_HEAD(self, context):
         """Manage HEAD request."""
+        self.do_get_head(context, False)
+
+    def do_get_head(self, context, is_get):
+        """Manage either GET or HEAD request."""
+
         self._answer = ''
+        answer_text = ''
         try:
             item_name = paths.resource_from_path(self.path)
             if item_name and self._collection:
                 # Get collection item
                 item = self._collection.get_item(item_name)
                 if item:
-                    answer_text = item.text
+                    if is_get:
+                        answer_text = item.text
                     etag = item.etag
                 else:
                     self.send_response(client.GONE)
+                    self.send_header("Content-Length", 0)
                     self.end_headers()
                     return
             elif self._collection:
                 # Get whole collection
-                answer_text = self._collection.text
+                if is_get:
+                    answer_text = self._collection.text
                 etag = self._collection.etag
             else:
                 self.send_response(client.NOT_FOUND)
+                self.send_header("Content-Length", 0)
                 self.end_headers()
                 return
                 
-            try:
-                self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
-            except UnicodeDecodeError:
-                answer_text = answer_text.decode(errors="ignore")
-                self._answer = answer_text.encode(self._encoding,"ignore")
-            
             self.send_response(client.OK)
-            self.send_header("Content-Length", len(self._answer))
+            if is_get:
+                try:
+                    self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
+                except UnicodeDecodeError:
+                    answer_text = answer_text.decode(errors="ignore")
+                    self._answer = answer_text.encode(self._encoding,"ignore")
+                self.send_header("Content-Length", len(self._answer))
+            else:
+                self.send_header("Content-Length", 0)
             self.send_header("Content-Type", "text/calendar")
             self.send_header("Last-Modified", email.utils.formatdate(time.mktime(self._collection.last_modified)))
             self.send_header("ETag", etag)
             self.end_headers()
+            if is_get:
+                self.wfile.write(self._answer)
         except Exception, ex:
             log.exception("Failed HEAD for %s", self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
 
     def if_match(self, item):
@@ -308,27 +321,30 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             else:
                 # No item or ETag precondition not verified, do not delete item
                 self.send_response(client.PRECONDITION_FAILED)
+                self.send_header("Content-Length", 0)
                 self.end_headers()
         except Exception, ex:
             log.exception("Failed DELETE for %s", self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
 
     @check_rights
     def do_MKCALENDAR(self, context):
         """Manage MKCALENDAR request."""
         self.send_response(client.CREATED)
+        self.send_header("Content-Length", 0)
         self.end_headers()
 
     @check_rights
     def do_OPTIONS(self, context):
         """Manage OPTIONS request."""
         self.send_response(client.OK)
+        self.send_header("Content-Length", 0)
         self.send_header(
             "Allow", "DELETE, HEAD, GET, MKCALENDAR, "
             "OPTIONS, PROPFIND, PUT, REPORT")
         self.send_header("DAV", "1, access-control, calendar-access, addressbook")
-        self.send_header("Content-Length", 0)
         self.end_headers()
 
     @check_rights
@@ -343,14 +359,15 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.debug("PROPFIND ANSWER %s", self._answer)
 
             self.send_response(client.MULTI_STATUS)
-            self.send_header("DAV", "1, calendar-access")
             self.send_header("Content-Length", len(self._answer))
+            self.send_header("DAV", "1, calendar-access")
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
             log.exception("Failed PROPFIND for %s", self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
 
     @check_rights
@@ -359,10 +376,12 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
             self.send_response(client.NO_CONTENT)
+            self.send_header("Content-Length", 0)
             self.end_headers()
         except Exception, ex:
             log.exception("Failed SEARCH for %s", self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
         
     @check_rights
@@ -395,9 +414,12 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 #log.debug("Precondition failed")
                 # PUT rejected in all other cases
                 self.send_response(client.PRECONDITION_FAILED)
+                self.send_header("Content-Length", 0)
+                self.end_headers()
         except Exception, ex:
             log.exception('Failed PUT for %s', self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
 
 
@@ -417,6 +439,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         except Exception, ex:
             log.exception("Failed REPORT for %s", self.path)
             self.send_response(client.BAD_REQUEST)
+            self.send_header("Content-Length", 0)
             self.end_headers()
 
     # pylint: enable=C0103
