@@ -88,8 +88,7 @@ def _check(request, function):
     if request.server.acl.has_right(owner, user, password):
         function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
-        request.send_response(client.UNAUTHORIZED)
-        request.send_header("Content-Length", 0)
+        request.send_calypso_response(client.UNAUTHORIZED, 0)
         request.send_header(
             "WWW-Authenticate",
             "Basic realm=\"Calypso Server - Password Required\"")
@@ -141,12 +140,26 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         
     # We do set Content-Length on all replies, so we can use HTTP/1.1
     # with multiple requests (as desired by the android CalDAV sync program
+
     protocol_version = 'HTTP/1.1'
 
     timeout = 20
 
+    server_version = "Calypso/1.0"
+
     def address_string(self):
         return str(self.client_address[0])
+
+    def send_connection_header(self):
+        conntype = "Close"
+        if self.close_connection == 0:
+            conntype = "Keep-Alive"
+        self.send_header("Connection", conntype)
+
+    def send_calypso_response(self, response, length):
+        self.send_response(response)
+        self.send_connection_header()
+        self.send_header("Content-Length", length)
 
     def handle_one_request(self):
         """Handle a single HTTP request.
@@ -157,21 +170,34 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
         """
         try:
+            self.wfile.flush()
             self.raw_requestline = self.rfile.readline(4000000)
             if len(self.raw_requestline) > 65536:
+                log.error("Read request too long")
                 self.requestline = ''
                 self.request_version = ''
                 self.command = ''
                 self.send_error(414)
                 return
             if not self.raw_requestline:
+                log.error("Read failed")
                 self.close_connection = 1
                 return
             if not self.parse_request():
                 # An error code has been sent, just exit
                 return
+            # parse_request clears close_connection on all http/1.1 links
+            # it should only do this if a keep-alive header is seen
+            conntype = self.headers.get('Connection', "")
+            self.close_connection = 1
+            if conntype.lower() == 'close':
+                self.close_connection = 1
+            elif (conntype.lower() == 'keep-alive' and
+                  self.protocol_version >= "HTTP/1.1"):
+                self.close_connection = 0
             mname = 'do_' + self.command
             if not hasattr(self, mname):
+                log.error("Unsupported method (%r)", self.command)
                 self.send_error(501, "Unsupported method (%r)" % self.command)
                 return
             method = getattr(self, mname)
@@ -262,21 +288,18 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                     answer_text = self._collection.text
                 etag = self._collection.etag
             else:
-                self.send_response(client.NOT_FOUND)
-                self.send_header("Content-Length", 0)
+                self.send_calypso_response(client.NOT_FOUND, 0)
                 self.end_headers()
                 return
                 
-            self.send_response(client.OK)
             if is_get:
                 try:
                     self._answer = answer_text.encode(self._encoding,"xmlcharrefreplace")
                 except UnicodeDecodeError:
                     answer_text = answer_text.decode(errors="ignore")
                     self._answer = answer_text.encode(self._encoding,"ignore")
-                self.send_header("Content-Length", len(self._answer))
-            else:
-                self.send_header("Content-Length", 0)
+
+            self.send_calypso_response(client.OK, len(self._answer))
             self.send_header("Content-Type", "text/calendar")
             self.send_header("Last-Modified", email.utils.formatdate(time.mktime(self._collection.last_modified)))
             self.send_header("ETag", etag)
@@ -285,8 +308,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.wfile.write(self._answer)
         except Exception, ex:
             log.exception("Failed HEAD for %s", self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
 
     def if_match(self, item):
@@ -313,34 +335,29 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # No ETag precondition or precondition verified, delete item
                 self._answer = xmlutils.delete(self.path, self._collection, context=context)
                 
-                self.send_response(client.NO_CONTENT)
-                self.send_header("Content-Length", len(self._answer))
+                self.send_calypso_response(client.NO_CONTENT, len(self._answer))
                 self.send_header("Content-Type", "text/xml")
                 self.end_headers()
                 self.wfile.write(self._answer)
             else:
                 # No item or ETag precondition not verified, do not delete item
-                self.send_response(client.PRECONDITION_FAILED)
-                self.send_header("Content-Length", 0)
+                self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
         except Exception, ex:
             log.exception("Failed DELETE for %s", self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
 
     @check_rights
     def do_MKCALENDAR(self, context):
         """Manage MKCALENDAR request."""
-        self.send_response(client.CREATED)
-        self.send_header("Content-Length", 0)
+        self.send_calypso_response(client.CREATED, 0)
         self.end_headers()
 
     @check_rights
     def do_OPTIONS(self, context):
         """Manage OPTIONS request."""
-        self.send_response(client.OK)
-        self.send_header("Content-Length", 0)
+        self.send_calypso_response(client.OK, 0)
         self.send_header(
             "Allow", "DELETE, HEAD, GET, MKCALENDAR, "
             "OPTIONS, PROPFIND, PUT, REPORT")
@@ -358,16 +375,14 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.headers.get("depth", "infinity"))
             log.debug("PROPFIND ANSWER %s", self._answer)
 
-            self.send_response(client.MULTI_STATUS)
-            self.send_header("Content-Length", len(self._answer))
+            self.send_calypso_response(client.MULTI_STATUS, len(self._answer))
             self.send_header("DAV", "1, calendar-access")
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
             log.exception("Failed PROPFIND for %s", self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
 
     @check_rights
@@ -375,13 +390,11 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """Manage SEARCH request."""
         try:
             xml_request = self.rfile.read(int(self.headers["Content-Length"]))
-            self.send_response(client.NO_CONTENT)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.NO_CONTENT, 0)
             self.end_headers()
         except Exception, ex:
             log.exception("Failed SEARCH for %s", self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
         
     @check_rights
@@ -406,20 +419,17 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 etag = self._collection.get_item(new_name).etag
                 #log.debug("replacement etag %s", etag)
 
-                self.send_response(client.CREATED)
-                self.send_header("Content-Length", 0)
+                self.send_calypso_response(client.CREATED, 0)
                 self.send_header("ETag", etag)
                 self.end_headers()
             else:
                 #log.debug("Precondition failed")
                 # PUT rejected in all other cases
-                self.send_response(client.PRECONDITION_FAILED)
-                self.send_header("Content-Length", 0)
+                self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
         except Exception, ex:
             log.exception('Failed PUT for %s', self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
 
 
@@ -431,15 +441,13 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.debug("REPORT %s %s", self.path, xml_request)
             self._answer = xmlutils.report(self.path, xml_request, self._collection)
             log.debug("REPORT ANSWER %s", self._answer)
-            self.send_response(client.MULTI_STATUS)
-            self.send_header("Content-Length", len(self._answer))
+            self.send_calypso_response(client.MULTI_STATUS, len(self._answer))
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
         except Exception, ex:
             log.exception("Failed REPORT for %s", self.path)
-            self.send_response(client.BAD_REQUEST)
-            self.send_header("Content-Length", 0)
+            self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
 
     # pylint: enable=C0103
