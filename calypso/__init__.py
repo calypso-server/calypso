@@ -143,7 +143,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
     protocol_version = 'HTTP/1.1'
 
-    timeout = 20
+    timeout = 90
 
     server_version = "Calypso/1.0"
 
@@ -171,7 +171,14 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         """
         try:
             self.wfile.flush()
-            self.raw_requestline = self.rfile.readline(4000000)
+            self.close_connection = 1
+
+            self.connection.settimeout(5)
+
+            self.raw_requestline = self.rfile.readline(65537)
+
+            self.connection.settimeout(90)
+
             if len(self.raw_requestline) > 65536:
                 log.error("Read request too long")
                 self.requestline = ''
@@ -180,20 +187,20 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.send_error(414)
                 return
             if not self.raw_requestline:
-                log.error("Read failed")
-                self.close_connection = 1
+                log.error("Connection closed")
                 return
+            log.debug("First line %s", self.raw_requestline)
             if not self.parse_request():
                 # An error code has been sent, just exit
+                self.close_connection = 1
                 return
             # parse_request clears close_connection on all http/1.1 links
             # it should only do this if a keep-alive header is seen
-            conntype = self.headers.get('Connection', "")
             self.close_connection = 1
-            if conntype.lower() == 'close':
-                self.close_connection = 1
-            elif (conntype.lower() == 'keep-alive' and
-                  self.protocol_version >= "HTTP/1.1"):
+            conntype = self.headers.get('Connection', "")
+            if (conntype.lower() == 'keep-alive'
+                and self.protocol_version >= "HTTP/1.1"):
+                log.debug("keep-alive")
                 self.close_connection = 0
             mname = 'do_' + self.command
             if not hasattr(self, mname):
