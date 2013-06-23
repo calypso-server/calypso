@@ -189,7 +189,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             if not self.raw_requestline:
                 log.error("Connection closed")
                 return
-            log.debug("First line %s", self.raw_requestline)
+            log.debug("First line '%s'", self.raw_requestline)
             if not self.parse_request():
                 # An error code has been sent, just exit
                 self.close_connection = 1
@@ -202,6 +202,9 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 and self.protocol_version >= "HTTP/1.1"):
                 log.debug("keep-alive")
                 self.close_connection = 0
+            reqlen = self.headers.get('Content-Length',"0")
+            log.debug("reqlen %s", reqlen)
+            self.xml_request = self.rfile.read(int(reqlen))
             mname = 'do_' + self.command
             if not hasattr(self, mname):
                 log.error("Unsupported method (%r)", self.command)
@@ -375,7 +378,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_PROPFIND(self, context):
         """Manage PROPFIND request."""
         try:
-            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+            xml_request = self.xml_request
             log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
@@ -396,7 +399,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_SEARCH(self, context):
         """Manage SEARCH request."""
         try:
-            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+            xml_request = self.xml_request
             self.send_calypso_response(client.NO_CONTENT, 0)
             self.end_headers()
         except Exception, ex:
@@ -416,8 +419,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # Case 1: No item and no ETag precondition: Add new item
                 # Case 2: Item and ETag precondition verified: Modify item
                 # Case 3: Item and no Etag precondition: Force modifying item
-                webdav_request = self._decode(
-                    self.rfile.read(int(self.headers["Content-Length"])))
+                webdav_request = self._decode(self.xml_request)
                 xmlutils.put(self.path, webdav_request, self._collection, context=context)
                 
                 new_name = paths.resource_from_path(self.path)
@@ -444,7 +446,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_REPORT(self, context):
         """Manage REPORT request."""
         try:
-            xml_request = self.rfile.read(int(self.headers["Content-Length"]))
+            xml_request = self.xml_request
             log.debug("REPORT %s %s", self.path, xml_request)
             self._answer = xmlutils.report(self.path, xml_request, self._collection)
             log.debug("REPORT ANSWER %s", self._answer)
