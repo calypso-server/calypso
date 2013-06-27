@@ -410,8 +410,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # Case 1: No item and no ETag precondition: Add new item
                 # Case 2: Item and ETag precondition verified: Modify item
                 # Case 3: Item and no Etag precondition: Force modifying item
-                webdav_request = self._decode(
-                    self.rfile.read(int(self.headers["Content-Length"])))
+                webdav_request = self._decode(self.xml_request)
                 xmlutils.put(self.path, webdav_request, self._collection, context=context)
                 
                 new_name = paths.resource_from_path(self.path)
