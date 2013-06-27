@@ -36,15 +36,12 @@ should have been included in this package.
 
 import os
 import os.path
-import posixpath
 import base64
 import socket
 import time
-import datetime
 import email.utils
 import logging
 import rfc822
-import urllib
 import ssl
 
 # Manage Python2/3 different modules
@@ -115,11 +112,6 @@ class HTTPSServer(HTTPServer):
 
     def __init__(self, address, handler):
         """Create server by wrapping HTTP socket in an SSL socket."""
-        # Fails with Python 2.5, import if needed
-        # pylint: disable=F0401
-        import ssl
-        # pylint: enable=F0401
-
         HTTPServer.__init__(self, address, handler)
         self.socket = ssl.wrap_socket(
             socket.socket(self.address_family, self.socket_type),
@@ -316,7 +308,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             if is_get:
                 self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed HEAD for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -353,7 +345,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # No item or ETag precondition not verified, do not delete item
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception("Failed DELETE for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -390,7 +382,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed PROPFIND for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -399,10 +391,9 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     def do_SEARCH(self, context):
         """Manage SEARCH request."""
         try:
-            xml_request = self.xml_request
             self.send_calypso_response(client.NO_CONTENT, 0)
             self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception("Failed SEARCH for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -436,7 +427,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # PUT rejected in all other cases
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception('Failed PUT for %s', self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -454,7 +445,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed REPORT for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
