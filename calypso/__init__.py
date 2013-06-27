@@ -308,7 +308,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.end_headers()
             if is_get:
                 self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed HEAD for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -345,7 +345,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # No item or ETag precondition not verified, do not delete item
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception("Failed DELETE for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -382,7 +382,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed PROPFIND for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -393,7 +393,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         try:
             self.send_calypso_response(client.NO_CONTENT, 0)
             self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception("Failed SEARCH for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -428,7 +428,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # PUT rejected in all other cases
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
                 self.end_headers()
-        except Exception, ex:
+        except Exception:
             log.exception('Failed PUT for %s', self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
@@ -446,7 +446,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/xml")
             self.end_headers()
             self.wfile.write(self._answer)
-        except Exception, ex:
+        except Exception:
             log.exception("Failed REPORT for %s", self.path)
             self.send_calypso_response(client.BAD_REQUEST, 0)
             self.end_headers()
