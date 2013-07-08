@@ -2,8 +2,61 @@
  Calypso - CalDAV Server
 ==========================
 
---------
- README
---------
-
 The Calypso Project is a free and open-source CalDAV calendar server.
+
+Initial setup
+-------------
+Calypso runs as a regular user, all data are stored in ~/.config/calypso.
+Either generate SSL keys, or use the default self-signed keys, then:
+
+$ mkdir -p ~/.config/calypso/calendars
+$ chmod og-rwx ~/.config/calypso
+$ touch ~/.config/calypso/htpasswd
+$ cat > ~/.config/calypso/config << EOF
+[server]
+certificate=/etc/ssl/certs/ssl-cert-snakeoil.pem
+key=/etc/ssl/private/ssl-cert-snakeoil.pem
+
+[acl]
+type=htpasswd
+encryption=sha1
+filename=$HOME/.config/calypso/htpasswd
+EOF
+
+Running calypso
+---------------
+
+Then run calypso:
+
+$ python ./calypso.py
+
+To capture logs, you can run in the foreground with debugging:
+
+$ python ./calypso.py -fg >calypso.log 2>&1
+
+
+Creating users and calendars
+----------------------------
+
+To add a new user:
+
+$ htpasswd -s $HOME/.config/calypso/htpasswd USER
+
+To add a new database:
+
+$ mkdir -p ~/.config/calypso/calendars/private/test
+$ cd ~/.config/calypso/calendars/private/test
+$ git init
+$ git commit --allow-empty -m'initialize new calendar'
+
+The new calendar should now be visible as https://localhost:5233/private/test
+
+You can add files to the directory at any time; calypso will check the
+directory mtime at each operation and update its internal state from
+that on disk automatically when the directory changes.  Importing files
+
+Given a set of files with VCALENDAR or VCARD entries, you can import them with:
+
+$ calypso --import private/test <filenames...>
+
+This will update any changed entries and add any new ones.
