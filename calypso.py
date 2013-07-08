@@ -104,7 +104,7 @@ if options.version:
 log = logging.getLogger()
 ch = logging.StreamHandler()
 
-# Print version and exit if the option is given
+# Handle debugging option and log levels
 if options.debug:
     log.setLevel(logging.DEBUG)
     ch.setLevel(logging.DEBUG)
