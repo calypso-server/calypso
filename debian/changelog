@@ -1,0 +1,5 @@
+calypso (1.1) unstable; urgency=low
+
+  * Initial release. (Closes: #683791)
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 15 Aug 2013 12:14:29 +0200
