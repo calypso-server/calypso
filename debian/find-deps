@@ -1,0 +1,8 @@
+#!/bin/sh
+strace -e trace=stat64 python ./calypso.py --version 2>&1 |
+grep '__init__.py"' | sed -e 's/^[^"]*"//' -e 's/".*$//' | while read file; do
+	if [ -L $file ]; then
+		file=`ls -l $file | sed 's/.*-> //'`
+	fi
+	dpkg -S $file
+done
