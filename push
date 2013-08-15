@@ -1,0 +1,7 @@
+#!/bin/sh
+revision=${1-HEAD}
+version=`git describe "$revision"`
+prefix=calypso-"$version"/
+output=calypso-"$version".tar.gz
+git archive --format tgz --prefix "$prefix"  --output "$output" $revision
+scp $output keithp.com:/var/www/calypso
