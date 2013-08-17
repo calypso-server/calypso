@@ -116,6 +116,7 @@ def collection_from_path(path):
     if not is_collection(collection):
         collection = parent_url(collection)
         if not is_collection(collection):
+            log.debug("No collection found for path %s", path)
             return None
 
     # unquote, strip off any trailing slash, then clean up /../ and // entries
