@@ -274,7 +274,7 @@ class Collection(object):
         return "<Calendar %s>" % (self.name)
         
     def has_git(self):
-        return os.path.exists(os.path.join(self.path, ".git"))
+        return True
 
     def git_commit(self, message, context):
         args = ["git", "commit"]
