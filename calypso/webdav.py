@@ -190,6 +190,14 @@ class Pathtime(object):
         self.mtime = newmtime
         return False
 
+class CalypsoError(Exception):
+    def __init__(self, name, reason):
+        self.name = name
+        self.reason = reason
+
+    def __str__(self):
+        return "%s: %s" % (self.reason, self.file)
+
 class Collection(object):
     """Internal collection class."""
 
@@ -335,7 +343,7 @@ class Collection(object):
                 os.makedirs(os.path.dirname(self.path))
             except OSError, ose:
                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
-                return
+                raise
 
         try:
             path = self.write_file(item)
@@ -343,9 +351,11 @@ class Collection(object):
             self.scan_dir()
         except OSError, ex:
             self.log.exception("Error writing file")
+            raise
         except Exception, ex:
             self.log.exception("Caught Exception")
             self.log.debug("Failed to create %s: %s", path,  ex)
+            raise
 
     def destroy_file(self, item, context):
         self.log.debug("Remove %s", item.name)
@@ -355,6 +365,7 @@ class Collection(object):
             self.scan_dir()
         except Exception, ex:
             self.log.exception("Failed to remove %s", item.path)
+            raise
 
     def rewrite_file(self, item, context):
         self.log.debug("Change %s", item.name)
@@ -366,6 +377,7 @@ class Collection(object):
             self.scan_dir()
         except Exception, ex:
             self.log.exception("Failed to rewrite %s", item.path)
+            raise
         
     def get_item(self, name):
         """Get collection item called ``name``."""
@@ -393,13 +405,12 @@ class Collection(object):
             new_item = Item(text, name, None)
         except Exception, e:
             self.log.exception("Cannot create new item")
-            return False
-        if new_item.name not in (item.name for item in self.my_items):
-            self.log.debug("New item %s", new_item.name)
-            self.create_file(new_item, context=context)
-            return True
-        self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
-        return False
+            raise
+        if new_item.name in (item.name for item in self.my_items):
+            self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
+            raise CalypsoError(new_item.name, "Item already present")
+        self.log.debug("New item %s", new_item.name)
+        self.create_file(new_item, context=context)
 
     def remove(self, name, context):
         """Remove object named ``name`` from collection."""
@@ -420,8 +431,9 @@ class Collection(object):
             new_item = Item(text, name, path)
         except Exception:
             self.log.exception("Failed to replace %s", name)
-            return
+            raise
 
+        ret = False
         if path is not None:
             self.rewrite_file(new_item, context=context)
         else:
@@ -444,8 +456,7 @@ class Collection(object):
                 self.log.debug("Added %s from %s", new_item.name, path)
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
-            return False
-        return True
+            raise
         
     def write(self, headers=None, items=None):
         return True
