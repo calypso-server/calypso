@@ -252,12 +252,14 @@ class Collection(object):
         self.remove_file(path)
         self.insert_file(path)
 
-    def scan_dir(self):
+    def scan_dir(self, force):
         try:
             mtime = os.path.getmtime(self.path)
-            if mtime == self.mtime:
-                return
         except OSError:
+            mtime = 0
+            force = True
+
+        if not force and mtime == self.mtime:
             return
         self.log.debug("Scan %s", self.path)
         self.mtime = mtime
@@ -298,7 +300,7 @@ class Collection(object):
         self.mtime = 0
         self._ctag = ''
         self.etag = hashlib.sha1(self.path).hexdigest()
-        self.scan_dir()
+        self.scan_dir(False)
         self.tag = "Collection"
 
     def __str__(self):
@@ -376,7 +378,7 @@ class Collection(object):
         try:
             path = self.write_file(item)
             self.git_add(path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except OSError, ex:
             self.log.exception("Error writing file")
             raise
@@ -393,7 +395,7 @@ class Collection(object):
         try:
             os.unlink(item.path)
             self.git_rm(item.path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except Exception, ex:
             self.log.exception("Failed to remove %s", item.path)
             raise
@@ -408,7 +410,7 @@ class Collection(object):
             os.rename(new_path, item.path)
             self.scan_file(item.path)
             self.git_change(item.path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except Exception, ex:
             self.log.exception("Failed to rewrite %s", item.path)
             raise
@@ -497,7 +499,7 @@ class Collection(object):
 
     @property
     def ctag(self):
-        self.scan_dir()
+        self.scan_dir(False)
         """Ctag from collection."""
         return self._ctag
 
@@ -509,7 +511,7 @@ class Collection(object):
     @property
     def text(self):
         """Collection as plain text."""
-        self.scan_dir()
+        self.scan_dir(False)
         _text = ""
         for item in self.my_items:
             _text = _text + item.text
@@ -523,7 +525,7 @@ class Collection(object):
     @property
     def items(self):
         """Get list of all items in collection."""
-        self.scan_dir()
+        self.scan_dir(False)
         return self.my_items
 
     @property
@@ -533,7 +535,7 @@ class Collection(object):
         The date is formatted according to rfc1123-5.2.14.
 
         """
-        self.scan_dir()
+        self.scan_dir(False)
         return time.gmtime(self.mtime)
 
     @property
