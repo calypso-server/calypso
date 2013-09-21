@@ -172,6 +172,32 @@ class Item(object):
             return value.utctimetuple()
         return time.gmtime()
 
+    def __unicode__(self):
+        fn = self.object.getChildValue("fn")
+        if fn:
+            return fn
+
+        if hasattr(self.object, "vevent"):
+            summary = self.object.vevent.getChildValue("summary")
+            dtstart = self.object.vevent.getChildValue("dtstart")
+            if summary and dtstart:
+                return "%s (%s)"%(summary, dtstart)
+            if summary:
+                return summary
+            if dtstart:
+                return str(dtstart)
+
+            uid = self.object.vevent.getChildValue("uid")
+            if uid:
+                return uid
+
+        uid = self.object.getChildValue("uid")
+        if uid:
+            return uid
+
+        return self.name
+
+
 class Pathtime(object):
     """Path name and timestamps"""
 
@@ -189,6 +215,14 @@ class Pathtime(object):
             return True
         self.mtime = newmtime
         return False
+
+class CalypsoError(Exception):
+    def __init__(self, name, reason):
+        self.name = name
+        self.reason = reason
+
+    def __str__(self):
+        return "%s: %s" % (self.reason, self.file)
 
 class Collection(object):
     """Internal collection class."""
@@ -218,12 +252,14 @@ class Collection(object):
         self.remove_file(path)
         self.insert_file(path)
 
-    def scan_dir(self):
+    def scan_dir(self, force):
         try:
             mtime = os.path.getmtime(self.path)
-            if mtime == self.mtime:
-                return
         except OSError:
+            mtime = 0
+            force = True
+
+        if not force and mtime == self.mtime:
             return
         self.log.debug("Scan %s", self.path)
         self.mtime = mtime
@@ -264,7 +300,7 @@ class Collection(object):
         self.mtime = 0
         self._ctag = ''
         self.etag = hashlib.sha1(self.path).hexdigest()
-        self.scan_dir()
+        self.scan_dir(False)
         self.tag = "Collection"
 
     def __str__(self):
@@ -274,11 +310,13 @@ class Collection(object):
         return "<Calendar %s>" % (self.name)
         
     def has_git(self):
-        return os.path.exists(os.path.join(self.path, ".git"))
+        return True
 
-    def git_commit(self, message, context):
+    def git_commit(self, context):
         args = ["git", "commit"]
         env = {}
+
+        message = context.get('action', 'other action')
 
         if "user" in context:
             # use environment variables instead of --author to avoid git
@@ -290,28 +328,26 @@ class Collection(object):
             # the git command as position is important with git arguments)
             args[1:1] = ["-c", "advice.implicitIdentity=false"]
         if "user-agent" in context:
-            message += "\n\nUser-Agent: %s"%context['user-agent']
+            message += u"\n\nUser-Agent: %r"%context['user-agent']
 
-        args.extend(["-m", message])
-
-        print args
+        args.extend(["-m", message.encode('utf8')])
 
         subprocess.check_call(args, cwd=self.path, env=env)
 
     def git_add(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Add new file", context=context)
+            self.git_commit(context=context)
     
     def git_rm(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "rm", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Remove old file", context=context)
+            self.git_commit(context=context)
 
     def git_change(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
-            self.git_commit("Change modified file", context=context)
+            self.git_commit(context=context)
             # Touch directory so that another running instance will update
             try:
                 os.utime(self.path, None)
@@ -335,37 +371,49 @@ class Collection(object):
                 os.makedirs(os.path.dirname(self.path))
             except OSError, ose:
                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
-                return
+                raise
+
+        context['action'] = u'Add %s'%item
 
         try:
             path = self.write_file(item)
             self.git_add(path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except OSError, ex:
             self.log.exception("Error writing file")
+            raise
         except Exception, ex:
             self.log.exception("Caught Exception")
             self.log.debug("Failed to create %s: %s", path,  ex)
+            raise
 
     def destroy_file(self, item, context):
         self.log.debug("Remove %s", item.name)
+
+        context['action'] = u'Remove %s'%item
+
         try:
             os.unlink(item.path)
             self.git_rm(item.path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except Exception, ex:
             self.log.exception("Failed to remove %s", item.path)
+            raise
 
     def rewrite_file(self, item, context):
         self.log.debug("Change %s", item.name)
+
+        context['action'] = u'Modify %s'%item
+
         try:
             new_path = self.write_file(item)
             os.rename(new_path, item.path)
             self.scan_file(item.path)
             self.git_change(item.path, context=context)
-            self.scan_dir()
+            self.scan_dir(True)
         except Exception, ex:
             self.log.exception("Failed to rewrite %s", item.path)
+            raise
         
     def get_item(self, name):
         """Get collection item called ``name``."""
@@ -393,13 +441,12 @@ class Collection(object):
             new_item = Item(text, name, None)
         except Exception, e:
             self.log.exception("Cannot create new item")
-            return False
-        if new_item.name not in (item.name for item in self.my_items):
-            self.log.debug("New item %s", new_item.name)
-            self.create_file(new_item, context=context)
-            return True
-        self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
-        return False
+            raise
+        if new_item.name in (item.name for item in self.my_items):
+            self.log.debug("Item %s already present %s" , new_item.name, self.get_item(new_item.name).path)
+            raise CalypsoError(new_item.name, "Item already present")
+        self.log.debug("New item %s", new_item.name)
+        self.create_file(new_item, context=context)
 
     def remove(self, name, context):
         """Remove object named ``name`` from collection."""
@@ -420,8 +467,9 @@ class Collection(object):
             new_item = Item(text, name, path)
         except Exception:
             self.log.exception("Failed to replace %s", name)
-            return
+            raise
 
+        ret = False
         if path is not None:
             self.rewrite_file(new_item, context=context)
         else:
@@ -444,15 +492,14 @@ class Collection(object):
                 self.log.debug("Added %s from %s", new_item.name, path)
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
-            return False
-        return True
+            raise
         
     def write(self, headers=None, items=None):
         return True
 
     @property
     def ctag(self):
-        self.scan_dir()
+        self.scan_dir(False)
         """Ctag from collection."""
         return self._ctag
 
@@ -464,7 +511,7 @@ class Collection(object):
     @property
     def text(self):
         """Collection as plain text."""
-        self.scan_dir()
+        self.scan_dir(False)
         _text = ""
         for item in self.my_items:
             _text = _text + item.text
@@ -478,7 +525,7 @@ class Collection(object):
     @property
     def items(self):
         """Get list of all items in collection."""
-        self.scan_dir()
+        self.scan_dir(False)
         return self.my_items
 
     @property
@@ -488,7 +535,7 @@ class Collection(object):
         The date is formatted according to rfc1123-5.2.14.
 
         """
-        self.scan_dir()
+        self.scan_dir(False)
         return time.gmtime(self.mtime)
 
     @property

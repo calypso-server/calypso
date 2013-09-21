@@ -22,6 +22,7 @@
 import urllib
 import os
 import os.path
+import posixpath # the semantics of urls follow posix rules, not platform dependent rules
 import logging
 
 from . import config
@@ -38,14 +39,24 @@ def url_to_owner(path):
     return path.strip("/").split("/")[0]
 
 #
+# Return the folder under which all data is stored
+#
+
+def data_root():
+    return os.path.expanduser(config.get("storage", "folder"))
+
+#
 # Given a URL, convert it to an absolute path name by
 # prepending the storage folder name
 #
+# Results are guaranteed to reside under data_root().
+#
 
 def url_to_file(url):
-    folder = os.path.expanduser(config.get("storage", "folder"))
     tail = urllib.url2pathname(url.strip("/"))
-    file = os.path.join(folder, tail)
+    # eliminate .. components, and potential double leading slashes
+    tail = posixpath.normpath('/' + tail).lstrip('/')
+    file = os.path.join(data_root(), tail)
     return file
 
 #
@@ -54,8 +65,15 @@ def url_to_file(url):
 #
 
 def is_collection(url):
-    path = os.path.join (url_to_file(url), ".git")
-    return os.path.isdir(path)
+    urlpath = url_to_file(url)
+    if not os.path.isdir(urlpath):
+        return False
+    while True:
+        if os.path.isdir(os.path.join(urlpath, '.git')):
+            return True
+        if urlpath == data_root():
+            return False
+        urlpath, stripped = os.path.split(urlpath)
 
 #
 # Given a URL, return the parent URL by stripping off
@@ -98,6 +116,7 @@ def collection_from_path(path):
     if not is_collection(collection):
         collection = parent_url(collection)
         if not is_collection(collection):
+            log.debug("No collection found for path %s", path)
             return None
 
     # unquote, strip off any trailing slash, then clean up /../ and // entries

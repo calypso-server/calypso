@@ -36,20 +36,18 @@ arguments.
 
 # TODO: Manage smart and configurable logs
 
+import daemon
+from daemon import pidlockfile
 import logging
+import optparse
 import os
 import sys
-import optparse
 
 import calypso
 import calypso.webdav as webdav
 
 # Get command-line options
-parser = optparse.OptionParser()
-parser.add_option(
-    "-v", "--version", action="store_true",
-    default=False,
-    help="show version and exit")
+parser = optparse.OptionParser(version=calypso.VERSION)
 parser.add_option(
     "-d", "--daemon", action="store_true",
     default=calypso.config.getboolean("server", "daemon"),
@@ -86,6 +84,10 @@ parser.add_option(
     "-g", "--debug", action="store_true",
     default=False,
     help="enable debug logging")
+parser.add_option(
+    "-P", "--pid-file", dest="pidfile",
+    default=calypso.config.get("server", "pidfile"),
+    help="set location of process-id file")
     
 (options, args) = parser.parse_args()
 
@@ -95,11 +97,6 @@ for option in parser.option_list:
     if key:
         value = getattr(options, key)
         calypso.config.set("server", key, value)
-
-# Print version and exit if the option is given
-if options.version:
-    print(calypso.VERSION)
-    sys.exit()
 
 log = logging.getLogger()
 ch = logging.StreamHandler()
@@ -132,14 +129,28 @@ if options.import_dest:
     else:
         sys.exit(1)
 
-# Fork if Calypso is launched as daemon
-if options.daemon:
-    if os.fork():
-        sys.exit()
-    sys.stdout = sys.stderr = open(os.devnull, "w")
+def run_server():
+    try:
+        # Launch server
+        server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
+        server = server_class(
+            (options.host, options.port), calypso.CollectionHTTPHandler)
+        server.serve_forever(poll_interval=10)
+    except KeyboardInterrupt:
+        server.socket.close()
 
-# Launch server
-server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
-server = server_class(
-    (options.host, options.port), calypso.CollectionHTTPHandler)
-server.serve_forever(poll_interval=10)
+# If foreground execution is requested, just run the server
+if not options.daemon:
+    run_server()
+    sys.exit(0)
+
+# Otherwise, daemonize Calypso
+context = daemon.DaemonContext()
+context.umask = 0o002
+if options.pidfile:
+    # Generate a pidfile where requested
+    context.pidfile = pidlockfile.PIDLockFile(options.pidfile)
+with context:
+    run_server()
+
+# vim: set ts=4 sw=4 et si :

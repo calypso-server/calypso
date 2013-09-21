@@ -44,7 +44,9 @@ INITIAL_CONFIG = {
         "daemon": "False",
         "ssl": "False",
         "certificate": "/etc/apache2/ssl/server.crt",
-        "key": "/etc/apache2/ssl/server.key"},
+        "key": "/etc/apache2/ssl/server.key",
+        "pidfile": "/var/run/calypso.pid",
+    },
     "encoding": {
         "request": "utf-8",
         "stock": "utf-8"},
@@ -52,7 +54,9 @@ INITIAL_CONFIG = {
         "type": "fake",
         "personal": "False",
         "filename": "/etc/calypso/users",
-        "encryption": "crypt"},
+        "encryption": "crypt",
+        "pam_service": "passwd",
+    },
     "storage": {
         "folder": os.path.expanduser("~/.config/calypso/calendars")}}
 
