@@ -1,3 +1,16 @@
+calypso (1.2) unstable; urgency=low
+
+  * Install README in /usr/share/docs/calypso (Closes: #722747)
+  * Explicitly re-scan directories when changing files (Closes: #722733)
+  * Add dependency on python-vobject and python-daemon (Closes: #722682)
+  * Reference http://keithp.com/calypso as homepage (Closes: #722077)
+  * Fix calypso init script for LSB compliance
+  * Add PAM support
+  * Report various exceptions back to clients as errors
+  * Improve git commit messages for DB changes
+
+ -- Keith Packard <keithp@keithp.com>  Sun, 22 Sep 2013 14:43:12 -0700
+
 calypso (1.1) unstable; urgency=low
 
   * Initial release. (Closes: #683791)
