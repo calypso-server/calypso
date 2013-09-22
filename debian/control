@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Keith Packard <keithp@keithp.com>
 Build-Depends: debhelper (>= 8.0.0), python (>= 2.7), python-setuptools, python-vobject, python-daemon
 Standards-Version: 3.9.4
-Homepage: http://keithp.com/
+Homepage: http://keithp.com/calypso
 X-Python-Version: >= 2.7
 
 Package: calypso
