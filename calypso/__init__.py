@@ -61,7 +61,7 @@ formatter = logging.Formatter("%(message)s")
 ch.setFormatter (formatter)
 log.addHandler(ch)
 
-VERSION = "1.1"
+VERSION = "1.2"
 
 def _check(request, function):
     """Check if user has sufficient rights for performing ``request``."""
