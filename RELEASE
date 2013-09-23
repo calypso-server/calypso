@@ -1,0 +1,17 @@
+Calypso eelease process
+
+1) Set version in calypso/__init__.py. Commit to master
+
+2) Tag master branch with version number
+
+3) Merge master to debian branch.
+
+4) Update debian/changelog. Commit to debian
+
+5) sh ./release.sh
+
+6) sh ./upload.sh
+
+7) Update calypso.mdwn page to add link for new release tarball
+
+8) Send mail to the calypso@keithp.com mailing list
