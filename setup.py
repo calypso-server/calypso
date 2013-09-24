@@ -65,7 +65,7 @@ class BuildScripts(build_scripts):
 # When the version is updated, ``calypso.VERSION`` must be modified.
 # A new section in the ``NEWS`` file must be added too.
 setup(
-    name="Calypso",
+    name="calypso",
     version=VERSION,
     description="CalDAV and CardDAV Server",
     long_description=__doc__,
