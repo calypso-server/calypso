@@ -88,7 +88,7 @@ def _check(request, function):
         request.send_calypso_response(client.UNAUTHORIZED, 0)
         request.send_header(
             "WWW-Authenticate",
-            "Basic realm=\"Calypso Server - Password Required\"")
+            "Basic realm=\"Calypso %s - password required\"" % VERSION)
         request.end_headers()
     # pylint: enable=W0212
 
@@ -137,7 +137,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
 
     timeout = 90
 
-    server_version = "Calypso/1.0"
+    server_version = "Calypso/%s" % VERSION
 
     def address_string(self):
         return str(self.client_address[0])

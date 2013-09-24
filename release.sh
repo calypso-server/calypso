@@ -2,10 +2,8 @@
 
 set -e
 
-git checkout debian
-
 VERSION=`python ./calypso.py --version`
 
 git-buildpackage --git-debian-branch=debian
 
-git archive --format=tar.gz -o ../calypso-$VERSION.tar.gz $VERSION
+git archive --format=tar.gz --prefix=calypso-$VERSION/ -o ../calypso-$VERSION.tar.gz master
