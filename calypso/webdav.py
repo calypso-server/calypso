@@ -490,9 +490,10 @@ class Collection(object):
             else:
                 self.create_file(new_item, context={})
                 self.log.debug("Added %s from %s", new_item.name, path)
+            return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
-            raise
+            return False
         
     def write(self, headers=None, items=None):
         return True
