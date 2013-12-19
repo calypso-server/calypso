@@ -39,6 +39,7 @@ import string
 import re
 import subprocess
 import urllib
+import copy
 
 from . import config, paths
 
@@ -480,20 +481,31 @@ class Collection(object):
             self.remove(name)
             self.append(name, text, context=context)
 
+    def import_item(self, new_item, path):
+        old_item = self.get_item(new_item.name)
+        if old_item:
+            new_item.path = old_item.path
+            self.rewrite_file(new_item, context={})
+            self.log.debug("Updated %s from %s", new_item.name, path)
+        else:
+            self.create_file(new_item, context={})
+            self.log.debug("Added %s from %s", new_item.name, path)
+
     def import_file(self, path):
         """Merge items from ``path`` to collection.
         """
 
         try:
-            new_item = self.read_file(path)
-            old_item = self.get_item(new_item.name)
-            if old_item:
-                new_item.path = old_item.path
-                self.rewrite_file(new_item, context={})
-                self.log.debug("Updated %s from %s", new_item.name, path)
+            new_ics = vobject.readOne(codecs.open(path,encoding='utf-8').read())
+            if new_ics.name == 'VCALENDAR':
+                for ve in new_ics.vevent_list:
+                    copy_ics = copy.deepcopy(new_ics)
+                    copy_ics.vevent_list = [ve]
+                    copy_item = Item(copy_ics.serialize(), None, path)
+#                    copy_ics.prettyPrint()
+                    self.import_item(copy_item, path)
             else:
-                self.create_file(new_item, context={})
-                self.log.debug("Added %s from %s", new_item.name, path)
+                self.import_item(new_ics)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
