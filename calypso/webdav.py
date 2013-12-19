@@ -115,6 +115,8 @@ class Item(object):
             return True
         if self.object.name == 'VEVENT':
             return False
+        if self.object.name == 'VCALENDAR':
+            return False
         for child in self.object.getChildren():
             if child.name == 'VCARD':
                 return True
@@ -124,10 +126,12 @@ class Item(object):
 
     @property
     def is_vcal(self):
-        """Whether this item is a vcard entry"""
+        """Whether this item is a vcal entry"""
         if self.object.name == 'VCARD':
             return False
         if self.object.name == 'VEVENT':
+            return True
+        if self.object.name == 'VCALENDAR':
             return True
         for child in self.object.getChildren():
             if child.name == 'VCARD':
