@@ -317,7 +317,7 @@ class Collection(object):
         return True
 
     def git_commit(self, context):
-        args = ["git", "commit"]
+        args = ["git", "commit", "--allow-empty"]
         env = {}
 
         message = context.get('action', 'other action')
