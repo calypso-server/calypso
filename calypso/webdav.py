@@ -500,9 +500,13 @@ class Collection(object):
             if new_ics.name == 'VCALENDAR':
                 for ve in new_ics.vevent_list:
                     copy_ics = copy.deepcopy(new_ics)
+
+                    # Check for events with both dtstart and duration entries and
+                    # delete the duration one
+                    if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
+                        del ve.contents['duration']
                     copy_ics.vevent_list = [ve]
                     copy_item = Item(copy_ics.serialize(), None, path)
-#                    copy_ics.prettyPrint()
                     self.import_item(copy_item, path)
             else:
                 self.import_item(new_ics)
