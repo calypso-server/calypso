@@ -1,3 +1,17 @@
+calypso (1.4) unstable; urgency=medium
+
+  [ Keith Packard ]
+  * Add quicker checks for calendar objects
+  * Add --allow-empty to git commit command line
+  * Split import of calendar with multiple vevents apart
+  * Remove DURATION from events with both DTSTART and DURATION
+  * Avoid trying to deep-copy the whole imported event
+
+  [ Jelmer Vernooij ]
+  * Ensure acl type loaded from config is a utf-8 string. Closes 740460.
+
+ -- Keith Packard <keithp@keithp.com>  Thu, 06 Mar 2014 22:18:02 -0800
+
 calypso (1.3) unstable; urgency=low
 
   * Add dependency on git (Closes: #725037)
