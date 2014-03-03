@@ -31,5 +31,6 @@ from calypso import config
 
 def load():
     """Load list of available ACL managers."""
-    module = __import__("calypso.acl", fromlist=[config.get("acl", "type")])
-    return getattr(module, config.get("acl", "type"))
+    acl_type = config.get("acl", "type").encode("utf-8")
+    module = __import__("calypso.acl", fromlist=[acl_type])
+    return getattr(module, acl_type)
