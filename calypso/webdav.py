@@ -498,16 +498,16 @@ class Collection(object):
         try:
             new_ics = vobject.readOne(codecs.open(path,encoding='utf-8').read())
             if new_ics.name == 'VCALENDAR':
-                for ve in new_ics.vevent_list:
-                    copy_ics = copy.deepcopy(new_ics)
 
+                events = new_ics.vevent_list
+                for ve in events:
                     # Check for events with both dtstart and duration entries and
                     # delete the duration one
                     if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
                         del ve.contents['duration']
-                    copy_ics.vevent_list = [ve]
-                    copy_item = Item(copy_ics.serialize(), None, path)
-                    self.import_item(copy_item, path)
+                    new_ics.vevent_list = [ve]
+                    new_item = Item(new_ics.serialize(), None, path)
+                    self.import_item(new_item, path)
             else:
                 self.import_item(new_ics)
             return True
