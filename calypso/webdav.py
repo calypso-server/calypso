@@ -39,6 +39,7 @@ import string
 import re
 import subprocess
 import urllib
+import copy
 
 from . import config, paths
 
@@ -115,6 +116,8 @@ class Item(object):
             return True
         if self.object.name == 'VEVENT':
             return False
+        if self.object.name == 'VCALENDAR':
+            return False
         for child in self.object.getChildren():
             if child.name == 'VCARD':
                 return True
@@ -124,10 +127,12 @@ class Item(object):
 
     @property
     def is_vcal(self):
-        """Whether this item is a vcard entry"""
+        """Whether this item is a vcal entry"""
         if self.object.name == 'VCARD':
             return False
         if self.object.name == 'VEVENT':
+            return True
+        if self.object.name == 'VCALENDAR':
             return True
         for child in self.object.getChildren():
             if child.name == 'VCARD':
@@ -313,7 +318,7 @@ class Collection(object):
         return True
 
     def git_commit(self, context):
-        args = ["git", "commit"]
+        args = ["git", "commit", "--allow-empty"]
         env = {}
 
         message = context.get('action', 'other action')
@@ -476,20 +481,35 @@ class Collection(object):
             self.remove(name)
             self.append(name, text, context=context)
 
+    def import_item(self, new_item, path):
+        old_item = self.get_item(new_item.name)
+        if old_item:
+            new_item.path = old_item.path
+            self.rewrite_file(new_item, context={})
+            self.log.debug("Updated %s from %s", new_item.name, path)
+        else:
+            self.create_file(new_item, context={})
+            self.log.debug("Added %s from %s", new_item.name, path)
+
     def import_file(self, path):
         """Merge items from ``path`` to collection.
         """
 
         try:
-            new_item = self.read_file(path)
-            old_item = self.get_item(new_item.name)
-            if old_item:
-                new_item.path = old_item.path
-                self.rewrite_file(new_item, context={})
-                self.log.debug("Updated %s from %s", new_item.name, path)
+            new_ics = vobject.readOne(codecs.open(path,encoding='utf-8').read())
+            if new_ics.name == 'VCALENDAR':
+
+                events = new_ics.vevent_list
+                for ve in events:
+                    # Check for events with both dtstart and duration entries and
+                    # delete the duration one
+                    if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
+                        del ve.contents['duration']
+                    new_ics.vevent_list = [ve]
+                    new_item = Item(new_ics.serialize(), None, path)
+                    self.import_item(new_item, path)
             else:
-                self.create_file(new_item, context={})
-                self.log.debug("Added %s from %s", new_item.name, path)
+                self.import_item(new_ics)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
