@@ -45,6 +45,14 @@ def url_to_owner(path):
 def data_root():
     return os.path.expanduser(config.get("storage", "folder"))
 
+
+#
+# Return the base path for the web server.
+#
+
+def base_prefix():
+    return config.get("server", "base_prefix").rstrip("/")
+
 #
 # Given a URL, convert it to an absolute path name by
 # prepending the storage folder name
@@ -53,11 +61,14 @@ def data_root():
 #
 
 def url_to_file(url):
+    if url.startswith(base_prefix()):
+        url = "/" + url[len(base_prefix()):].lstrip("/")
     tail = urllib.url2pathname(url.strip("/"))
     # eliminate .. components, and potential double leading slashes
     tail = posixpath.normpath('/' + tail).lstrip('/')
     file = os.path.join(data_root(), tail)
     return file
+
 
 #
 # Does the provided URL reference a collection? This
