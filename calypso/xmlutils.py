@@ -86,7 +86,7 @@ def delete(path, collection, context):
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
-def propfind(path, xml_request, collection, depth):
+def propfind(path, xml_request, collection, depth, context):
     """Read and answer PROPFIND requests.
 
     Read rfc4918-9.1 for info.
@@ -210,6 +210,10 @@ def propfind(path, xml_request, collection, depth):
 #                element.text = time.strftime("%a, %d %b %Y %H:%M:%S +0000", item.last_modified)
 #                element.text = email.utils.formatdate(item.last_modified)
                 element.text = email.utils.formatdate(time.mktime(item.last_modified))
+            elif tag == _tag("D", "current-user-principal"):
+                tag = ET.Element(_tag("D", "href"))
+                tag.text = config.get("server", "user_principal") % context
+                element.append(tag)
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))

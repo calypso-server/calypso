@@ -374,7 +374,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
-                self.headers.get("depth", "infinity"))
+                self.headers.get("depth", "infinity"),
+                context)
             log.debug("PROPFIND ANSWER %s", self._answer)
 
             self.send_calypso_response(client.MULTI_STATUS, len(self._answer))

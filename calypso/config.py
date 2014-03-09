@@ -46,6 +46,7 @@ INITIAL_CONFIG = {
         "certificate": "/etc/apache2/ssl/server.crt",
         "key": "/etc/apache2/ssl/server.key",
         "pidfile": "/var/run/calypso.pid",
+        "user_principal": "/+%(user)s",
     },
     "encoding": {
         "request": "utf-8",
