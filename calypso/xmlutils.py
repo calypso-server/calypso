@@ -218,10 +218,9 @@ def propfind(path, xml_request, collection, depth, context):
                 tag = ET.Element(_tag("D", "href"))
                 tag.text = config.get("server", "user_principal") % context
                 element.append(tag)
-            elif tag == _tag("A", "addressbook-description") and is_collection:
-                element.text = collection.read_file(".git/description")
-            elif tag == _tag("C", "calendar-description") and is_collection:
-                element.text = collection.read_file(".git/description")
+            elif tag in (_tag("A", "addressbook-description"),
+                         _tag("C", "calendar-description")) and is_collection:
+                element.text = collection.get_description()
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))

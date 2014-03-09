@@ -232,6 +232,13 @@ class CalypsoError(Exception):
 class Collection(object):
     """Internal collection class."""
 
+    def get_description(self):
+        f = codecs.open(os.path.join(self.path, ".git/description"), encoding='utf-8')
+        try:
+            return f.read()
+        finally:
+            f.close()
+
     def read_file(self, path):
         text = codecs.open(path,encoding='utf-8').read()
         item = Item(text, None, path)
