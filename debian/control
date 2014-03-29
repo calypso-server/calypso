@@ -9,6 +9,7 @@ Build-Depends: debhelper (>= 8.0.0), python (>= 2.7), python-setuptools, python-
 Standards-Version: 3.9.6
 Homepage: http://keithp.com/calypso
 X-Python-Version: >= 2.7
+XS-Testsuite: autopkgtest
 
 Package: calypso
 Architecture: all

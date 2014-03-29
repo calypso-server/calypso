@@ -1,0 +1,54 @@
+#!/bin/sh
+
+TESTS="\
+    CalDAV/delete.xml \
+    CalDAV/vtodos.xml \
+"
+
+set -e
+
+cleanup ()
+{
+   kill $(cat $WORKDIR/pid)
+   rm --preserve-root -rf $WORKDIR
+}
+
+WORKDIR=$(mktemp -d)
+trap cleanup 0 INT QUIT ABRT PIPE TERM
+
+export CALYPSO_CONFIG=$WORKDIR/config
+
+# Initial calendars
+CALENDARS="\
+           $WORKDIR/calendars/__uids__/user01/calendar/       \
+           $WORKDIR/calendars/__uids__/user01/tasks/          \
+          "
+
+for d in $CALENDARS; do
+  mkdir -p $d
+  git init $d
+done
+
+# config
+cat <<EOF > $WORKDIR/config
+[server]
+ssl=false
+
+[acl]
+type=htpasswd
+filename=$WORKDIR/passwd
+encryption=plain
+
+[storage]
+folder=$WORKDIR/
+EOF
+echo "user01:user01" > $WORKDIR/passwd
+
+# Run the server
+calypso -d -P $WORKDIR/pid
+sleep 2
+
+# Run the tests
+testcaldav -s $PWD/debian/tests/serverinfo.xml $TESTS
+
+echo "run: OK"

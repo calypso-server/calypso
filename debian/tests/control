@@ -1,0 +1,4 @@
+Tests: caldav
+Restrictions: isolation-container
+Depends: caldav-tester,
+  calypso
