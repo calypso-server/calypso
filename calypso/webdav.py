@@ -233,11 +233,12 @@ class Collection(object):
     """Internal collection class."""
 
     def get_description(self):
-        f = codecs.open(os.path.join(self.path, ".git/description"), encoding='utf-8')
         try:
-            return f.read()
-        finally:
-            f.close()
+            f = codecs.open(os.path.join(self.path, ".git/description"), encoding='utf-8')
+        except IOError:
+            # .git/description is not present eg when the complete server is a single git repo
+            return self.urlpath
+        return f.read()
 
     def read_file(self, path):
         text = codecs.open(path,encoding='utf-8').read()
@@ -304,6 +305,7 @@ class Collection(object):
         
         self.log = logging.getLogger(__name__)
         self.encoding = "utf-8"
+        self.urlpath = path
         self.owner = paths.url_to_owner(path)
         self.path = paths.url_to_file(path)
         self.pattern = os.path.join(self.path, "*")
