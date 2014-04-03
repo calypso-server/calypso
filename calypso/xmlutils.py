@@ -387,6 +387,8 @@ def report(path, xml_request, collection):
                     element.text = item.etag
                 elif tag == _tag("C", "calendar-data"):
                     element.text = item.text
+                elif tag == _tag("A", "address-data"):
+                    element.text = item.text
                 prop.append(element)
 
             status = ET.Element(_tag("D", "status"))
