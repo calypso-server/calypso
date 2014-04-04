@@ -37,7 +37,11 @@ import vobject
 import re
 import subprocess
 
+import ConfigParser
+
 from . import config, paths
+
+METADATA_FILENAME = ".calypso-collection"
 
 #
 # Recursive search for 'name' within 'vobject'
@@ -230,6 +234,11 @@ class Collection(object):
 
     def get_description(self):
         try:
+            return str(self.metadata.get('collection', 'description'))
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError, ValueError):
+            pass
+
+        try:
             f = codecs.open(os.path.join(self.path, ".git/description"), encoding='utf-8')
         except IOError:
             # .git/description is not present eg when the complete server is a single git repo
@@ -261,12 +270,30 @@ class Collection(object):
         self.remove_file(path)
         self.insert_file(path)
 
+    __metadatafile = property(lambda self: os.path.join(self.path, METADATA_FILENAME))
+
+    def scan_metadata(self, force):
+        try:
+            mtime = os.path.getmtime(self.__metadatafile)
+        except OSError:
+            mtime = 0
+            force = True
+
+        if not force and mtime == self.mtime and self.metadata is not None:
+            return
+
+        parser = ConfigParser.RawConfigParser()
+        parser.read(self.__metadatafile)
+        self.metadata = parser
+
     def scan_dir(self, force):
         try:
             mtime = os.path.getmtime(self.path)
         except OSError:
             mtime = 0
             force = True
+
+        self.scan_metadata(force)
 
         if not force and mtime == self.mtime:
             return
@@ -275,6 +302,8 @@ class Collection(object):
         filenames = glob.glob(self.pattern)
         newfiles = []
         for filename in filenames:
+            if filename == METADATA_FILENAME:
+                continue
             for file in self.files:
                 if filename == file.path:
                     newfiles.append(file)
@@ -313,6 +342,8 @@ class Collection(object):
         self.mtime = 0
         self._ctag = ''
         self.etag = hashlib.sha1(self.path).hexdigest()
+        self.metadata = None
+        self.metadata_mtime = None
         self.scan_dir(False)
         self.tag = "Collection"
 
