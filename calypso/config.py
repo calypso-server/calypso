@@ -60,7 +60,11 @@ INITIAL_CONFIG = {
         "pam_service": "passwd",
     },
     "storage": {
-        "folder": os.path.expanduser("~/.config/calypso/calendars")}}
+        "folder": os.path.expanduser("~/.config/calypso/calendars")
+    },
+    "headers": {
+    },
+}
 
 # Create a ConfigParser and configure it
 _CONFIG_PARSER = ConfigParser()

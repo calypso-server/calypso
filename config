@@ -51,4 +51,15 @@ encryption = crypt
 # created if not present
 folder = ~/.config/calypso/calendars
 
+# The headers section allows verbatim addition of static headers to
+# responses. The following exemplary headers are useful when the calendar
+# should be accessed from users' web browsers using a web application hosted on
+# a different server.
+#
+#[headers]
+#Access-Control-Allow-Origin = *
+#Access-Control-Allow-Credentials = *
+#Access-Control-Allow-Methods = GET, POST, PUT, DELETE, PROPFIND, REPORT
+#Access-Control-Allow-Headers = accept, authorization, content-type, depth, x-client, if-match
+
 # vim:ft=cfg

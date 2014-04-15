@@ -172,6 +172,9 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_response(response)
         self.send_connection_header()
         self.send_header("Content-Length", length)
+        for header, value in config.items('headers'):
+            self.send_header(header, value)
+
 
     def handle_one_request(self):
         """Handle a single HTTP request.
