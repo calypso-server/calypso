@@ -360,8 +360,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_calypso_response(client.CREATED, 0)
         self.end_headers()
 
-    @check_rights
-    def do_OPTIONS(self, context):
+    def do_OPTIONS(self):
         """Manage OPTIONS request."""
         self.send_calypso_response(client.OK, 0)
         self.send_header(
