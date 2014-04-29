@@ -389,7 +389,7 @@ class Collection(object):
             raise
         except Exception, ex:
             self.log.exception("Caught Exception")
-            self.log.debug("Failed to create %s: %s", path,  ex)
+            self.log.debug("Failed to create %s: %s", self.path,  ex)
             raise
 
     def destroy_file(self, item, context):
@@ -509,7 +509,8 @@ class Collection(object):
                     new_item = Item(new_ics.serialize(), None, path)
                     self.import_item(new_item, path)
             else:
-                self.import_item(new_ics)
+                new_item = Item(new_ics.serialize(), None, path)
+                self.import_item(new_item, path)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
