@@ -60,6 +60,6 @@ folder = ~/.config/calypso/calendars
 #Access-Control-Allow-Origin = *
 #Access-Control-Allow-Credentials = *
 #Access-Control-Allow-Methods = GET, POST, PUT, DELETE, PROPFIND, REPORT
-#Access-Control-Allow-Headers = accept, authorization, content-type, depth, x-client, if-match
+#Access-Control-Allow-Headers = accept, authorization, content-type, depth, x-client, if-match, if-none-match
 
 # vim:ft=cfg
