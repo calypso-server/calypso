@@ -96,10 +96,14 @@ def propfind(path, xml_request, collection, depth, context):
     item_name = paths.resource_from_path(path)
     collection_name = paths.collection_from_path(path)
 
-    # Reading request
-    root = ET.fromstring(xml_request)
+    if xml_request:
+        # Reading request
+        root = ET.fromstring(xml_request)
 
-    prop_element = root.find(_tag("D", "prop"))
+        prop_element = root.find(_tag("D", "prop"))
+    else:
+        prop_element = None
+
     if prop_element is not None:
         prop_list = prop_element.getchildren()
         props = [prop.tag for prop in prop_list]
