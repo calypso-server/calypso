@@ -61,7 +61,7 @@ formatter = logging.Formatter("%(message)s")
 ch.setFormatter (formatter)
 log.addHandler(ch)
 
-VERSION = "1.3"
+VERSION = "1.5"
 
 def _check(request, function):
     """Check if user has sufficient rights for performing ``request``."""
@@ -411,12 +411,10 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 # Case 2: Item and ETag precondition verified: Modify item
                 # Case 3: Item and no Etag precondition: Force modifying item
                 webdav_request = self._decode(self.xml_request)
-                xmlutils.put(self.path, webdav_request, self._collection, context=context)
+                new_item = xmlutils.put(self.path, webdav_request, self._collection, context=context)
                 
-                new_name = paths.resource_from_path(self.path)
-                log.debug("item_name %s new_name %s", item_name, new_name)
-                # We need to double get this item, because it just got created
-                etag = self._collection.get_item(new_name).etag
+                log.debug("item_name %s new_name %s", item_name, new_item.name)
+                etag = new_item.etag
                 #log.debug("replacement etag %s", etag)
 
                 self.send_calypso_response(client.CREATED, 0)

@@ -389,7 +389,7 @@ class Collection(object):
             raise
         except Exception, ex:
             self.log.exception("Caught Exception")
-            self.log.debug("Failed to create %s: %s", path,  ex)
+            self.log.debug("Failed to create %s: %s", self.path,  ex)
             raise
 
     def destroy_file(self, item, context):
@@ -442,6 +442,7 @@ class Collection(object):
 
         """
 
+        self.log.debug('append name %s', name)
         try:
             new_item = Item(text, name, None)
         except Exception, e:
@@ -452,6 +453,7 @@ class Collection(object):
             raise CalypsoError(new_item.name, "Item already present")
         self.log.debug("New item %s", new_item.name)
         self.create_file(new_item, context=context)
+        return new_item
 
     def remove(self, name, context):
         """Remove object named ``name`` from collection."""
@@ -476,10 +478,13 @@ class Collection(object):
 
         ret = False
         if path is not None:
+            self.log.debug('rewrite path %s', path)
             self.rewrite_file(new_item, context=context)
         else:
+            self.log.debug('remove and append item %s', name)
             self.remove(name)
             self.append(name, text, context=context)
+        return new_item
 
     def import_item(self, new_item, path):
         old_item = self.get_item(new_item.name)
@@ -509,7 +514,8 @@ class Collection(object):
                     new_item = Item(new_ics.serialize(), None, path)
                     self.import_item(new_item, path)
             else:
-                self.import_item(new_ics)
+                new_item = Item(new_ics.serialize(), None, path)
+                self.import_item(new_item, path)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)

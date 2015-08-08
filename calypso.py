@@ -37,7 +37,8 @@ arguments.
 # TODO: Manage smart and configurable logs
 
 import daemon
-from daemon import pidlockfile
+import lockfile
+from lockfile import pidlockfile
 import logging
 import optparse
 import os

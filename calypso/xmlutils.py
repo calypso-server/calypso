@@ -222,13 +222,15 @@ def propfind(path, xml_request, collection, depth):
 def put(path, webdav_request, collection, context):
     """Read PUT requests."""
     name = paths.resource_from_path(path)
+    log.debug('xmlutils put path %s name %s', path, name)
     if name in (item.name for item in collection.items):
         # PUT is modifying an existing item
-        collection.replace(name, webdav_request, context=context)
+        log.debug('Replacing item named %s', name)
+        return collection.replace(name, webdav_request, context=context)
     else:
         # PUT is adding a new item
         log.debug('Putting a new item, because name %s is not known', name)
-        collection.append(name, webdav_request, context=context)
+        return collection.append(name, webdav_request, context=context)
 
 
 def match_filter_element(vobject, fe):
