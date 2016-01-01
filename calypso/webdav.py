@@ -501,21 +501,22 @@ class Collection(object):
         """
 
         try:
-            new_ics = vobject.readOne(codecs.open(path,encoding='utf-8').read())
-            if new_ics.name == 'VCALENDAR':
+            new_object = vobject.readComponents(codecs.open(path,encoding='utf-8').read())
+            for new_ics in new_object:
+                if new_ics.name == 'VCALENDAR':
 
-                events = new_ics.vevent_list
-                for ve in events:
-                    # Check for events with both dtstart and duration entries and
-                    # delete the duration one
-                    if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
-                        del ve.contents['duration']
-                    new_ics.vevent_list = [ve]
+                    events = new_ics.vevent_list
+                    for ve in events:
+                        # Check for events with both dtstart and duration entries and
+                        # delete the duration one
+                        if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
+                            del ve.contents['duration']
+                        new_ics.vevent_list = [ve]
+                        new_item = Item(new_ics.serialize(), None, path)
+                        self.import_item(new_item, path)
+                else:
                     new_item = Item(new_ics.serialize(), None, path)
                     self.import_item(new_item, path)
-            else:
-                new_item = Item(new_ics.serialize(), None, path)
-                self.import_item(new_item, path)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
