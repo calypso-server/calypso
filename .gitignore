@@ -1,1 +1,7 @@
+calypso.egg-info/
+.eggs/
 *.pyc
+*.sw?
+*~
+.#*
+\#*#
