@@ -78,6 +78,7 @@ setup(
     packages=["calypso", "calypso.acl"],
     provides=["calypso"],
     install_requires=["daemon","vobject"],
+    test_requires=['nose>=0.11.1'],
     scripts=["calypso.py"],
     cmdclass={"build_scripts": BuildScripts},
     keywords=["calendar", "CalDAV"],
