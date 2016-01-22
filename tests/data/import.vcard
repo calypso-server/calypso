@@ -1,4 +1,12 @@
 BEGIN:VCARD
+VERSION:3.0
+N:TromsøUniversitetet;i;;
+FN:Universitetet i Tromsø
+ORG:Universitetet i Tromsø
+TEL;TYPE=WORK:+47 77 64 40 00
+END:VCARD
+
+BEGIN:VCARD
 VERSION:4.0
 N:Gump;Forrest;;;
 FN:Forrest Gump

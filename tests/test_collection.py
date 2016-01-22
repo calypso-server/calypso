@@ -26,4 +26,6 @@ class TestCollection(unittest.TestCase):
     def test_import_file(self):
         collection = Collection("")
         self.assertTrue(collection.import_file(self.test_vcard))
-        self.assertEqual(len(collection.items), 1)
+        self.assertEqual(len(collection.items), 2)
+        org = u'Universitetet i Tromsø'
+        self.assertTrue(org == collection.items[0].object.org.value[0])

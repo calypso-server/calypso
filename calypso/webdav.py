@@ -519,10 +519,10 @@ class Collection(object):
                         if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
                             del ve.contents['duration']
                         new_ics.vevent_list = [ve]
-                        new_item = Item(new_ics.serialize(), None, path)
+                        new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
                         self.import_item(new_item, path)
                 else:
-                    new_item = Item(new_ics.serialize(), None, path)
+                    new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
                     self.import_item(new_item, path)
             return True
         except Exception, ex:
