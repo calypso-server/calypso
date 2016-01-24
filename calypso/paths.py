@@ -43,7 +43,7 @@ def url_to_owner(path):
 #
 
 def data_root():
-    return os.path.expanduser(config.get("storage", "folder"))
+    return os.path.expanduser(config.get("storage", "folder")).rstrip('/')
 
 
 #
