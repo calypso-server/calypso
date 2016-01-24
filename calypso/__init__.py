@@ -341,6 +341,10 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "text/xml")
                 self.end_headers()
                 self.wfile.write(self._answer)
+            elif not item:
+                # Item does not exist
+                self.send_calypso_response(client.NOT_FOUND, 0)
+                self.end_headers()
             else:
                 # No item or ETag precondition not verified, do not delete item
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
