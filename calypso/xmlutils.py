@@ -275,6 +275,19 @@ def match_filter_element(vobject, fe):
             return False
         start = fe.get("start")
         end = fe.get("end")
+        # According to RFC 4791, one of start and stop must be set,
+        # but the other can be empty.  If both are empty, the
+        # specification is violated.
+        if start is None and end is None:
+            msg = "time-range missing both start and stop attribute (required by RFC 4791)"
+            log.error(msg)
+            return False
+        # RFC 4791 state if start is missing, assume it is -infinity
+        if start is None:
+            start = "00010101T000000Z"  # start of year one
+        # RFC 4791 state if end is missing, assume it is +infinity
+        if end is None:
+            end = "99991231T235959Z"  # last date with four digit year
         if rruleset is None:
             rruleset = dateutil.rrule.rruleset()
             dtstart = vobject.dtstart.value
