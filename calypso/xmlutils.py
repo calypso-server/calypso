@@ -313,6 +313,7 @@ def match_filter(item, filter):
     for fe in filter.getchildren():
         if match_filter_element(item.object, fe):
             return True
+    return False
 
 def report(path, xml_request, collection):
     """Read and answer REPORT requests.
