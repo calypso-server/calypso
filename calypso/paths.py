@@ -98,6 +98,15 @@ def parent_url(path):
     return new_path
 
 #
+# Given a URL, return the child URL, which is
+# the last path element
+#
+
+def child_url(path):
+    path_parts = path.strip("/").split("/")
+    return path_parts[len(path_parts)-1]
+
+#
 # If the given URL references a resource, then
 # return the name of that resource. Otherwise,
 # return None
@@ -107,10 +116,23 @@ log = logging.getLogger()
 
 def resource_from_path(path):
     """Return Calypso item name from ``path``."""
-    if is_collection(path):
-        name = None
+
+    child_path = None
+    collection = path
+
+    while collection and not is_collection(collection):
+        child = child_url(collection)
+        if child_path:
+            child_path = child + "/" + child_path
+        else:
+            child_path = child
+        collection = parent_url(collection)
+
+    if child_path:
+        name = urllib.unquote(child_path)
     else:
-        name = urllib.unquote(path.strip("/").split("/")[-1])
+        name = None
+
     log.debug('Path %s results in name: %s', path, name)
     return name
 
@@ -124,11 +146,12 @@ def collection_from_path(path):
     """Returns Calypso collection name from ``path``."""
 
     collection = path
-    if not is_collection(collection):
+    while collection and not is_collection(collection):
         collection = parent_url(collection)
-        if not is_collection(collection):
-            log.debug("No collection found for path %s", path)
-            return None
+
+    if not collection:
+        log.debug("No collection found for path %s", path)
+        return None
 
     # unquote, strip off any trailing slash, then clean up /../ and // entries
     collection = "/" + urllib.unquote(collection).strip("/")
