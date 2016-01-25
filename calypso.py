@@ -38,7 +38,6 @@ arguments.
 
 import daemon
 import lockfile
-from lockfile import pidlockfile
 import logging
 import optparse
 import os
@@ -149,6 +148,7 @@ if not options.daemon:
 context = daemon.DaemonContext()
 context.umask = 0o002
 if options.pidfile:
+    from lockfile import pidlockfile
     # Generate a pidfile where requested
     context.pidfile = pidlockfile.PIDLockFile(options.pidfile)
 with context:
