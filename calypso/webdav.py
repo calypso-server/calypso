@@ -207,7 +207,7 @@ class Pathtime(object):
     """Path name and timestamps"""
 
     def __init__(self, path):
-    	self.path = path
+        self.path = path
         self.mtime = self.curmtime
 
     @property
