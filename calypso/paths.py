@@ -120,7 +120,7 @@ def resource_from_path(path):
     child_path = None
     collection = path
 
-    while collection and not is_collection(collection):
+    while collection != '/' and not is_collection(collection):
         child = child_url(collection)
         if child_path:
             child_path = child + "/" + child_path
@@ -146,7 +146,7 @@ def collection_from_path(path):
     """Returns Calypso collection name from ``path``."""
 
     collection = path
-    while collection and not is_collection(collection):
+    while collection != '/' and not is_collection(collection):
         collection = parent_url(collection)
 
     if not collection:
