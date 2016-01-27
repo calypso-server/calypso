@@ -88,7 +88,7 @@ def _check(request, function):
         request.send_calypso_response(client.UNAUTHORIZED, 0)
         request.send_header(
             "WWW-Authenticate",
-            "Basic realm=\"Calypso %s - password required\"" % VERSION)
+            'Basic realm="Calypso CalDAV/CardDAV server - password required"')
         request.end_headers()
     # pylint: enable=W0212
 
