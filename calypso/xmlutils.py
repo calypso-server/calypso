@@ -331,7 +331,7 @@ def report(path, xml_request, collection):
     filter_element = root.find(_tag("C", "filter"))
 
     if collection:
-        if root.tag == _tag("C", "calendar-multiget"):
+        if root.tag == _tag("C", "calendar-multiget") or root.tag == _tag('A', 'addressbook-multiget'):
             # Read rfc4791-7.9 for info
             hreferences = set((href_element.text for href_element
                                in root.findall(_tag("D", "href"))))
