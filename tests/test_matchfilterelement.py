@@ -30,7 +30,7 @@ class TestMatchFilterElement(unittest.TestCase):
 Check that the time-range parser accept ranges where start or stop is
 missing.
 """
-        xml_request1 ="""
+        valid_xml_request1 ="""
 <calendar-query xmlns="urn:ietf:params:xml:ns:caldav">
  <prop xmlns="DAV:">
   <getetag xmlns="DAV:"/>
@@ -43,7 +43,7 @@ missing.
  </filter>
 </calendar-query>
 """
-        xml_request2 ="""
+        valid_xml_request2 ="""
 <calendar-query xmlns="urn:ietf:params:xml:ns:caldav">
  <prop xmlns="DAV:">
   <getetag xmlns="DAV:"/>
@@ -56,7 +56,7 @@ missing.
  </filter>
 </calendar-query>
 """
-        xml_request3 ="""
+        invalid_xml_request1 ="""
 <calendar-query xmlns="urn:ietf:params:xml:ns:caldav">
  <prop xmlns="DAV:">
   <getetag xmlns="DAV:"/>
@@ -77,12 +77,21 @@ missing.
         # needed to get the CollectionHTTPHandler class working.  Use
         # match_filter() directly instead.
         truecount = 0
-        for xml_request in [xml_request1, xml_request2, xml_request3]:
+        for xml_request in [valid_xml_request1, valid_xml_request2]:
             root = ET.fromstring(xml_request)
             filter_element = root.find(xmlutils._tag("C", "filter"))
             for item in collection.items:
                 answer = xmlutils.match_filter(item, filter_element)
                 if answer:
-                    truecount = truecount + 1
+                    truecount += 1
         # The text vcalendar entry is either before or after the cutoff point.
         self.assertEqual(truecount, 1)
+
+        for xml_request in [invalid_xml_request1]:
+            root = ET.fromstring(xml_request)
+            filter_element = root.find(xmlutils._tag("C", "filter"))
+            for item in collection.items:
+                with self.assertRaisesRegexp(ValueError, "time-range missing both start and stop attribute"):
+                    xmlutils.match_filter(item, filter_element)
+        # The text vcalendar entry is either before or after the cutoff point.
+

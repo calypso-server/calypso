@@ -281,7 +281,7 @@ def match_filter_element(vobject, fe):
         if start is None and end is None:
             msg = "time-range missing both start and stop attribute (required by RFC 4791)"
             log.error(msg)
-            return False
+            raise ValueError(msg)
         # RFC 4791 state if start is missing, assume it is -infinity
         if start is None:
             start = "00010101T000000Z"  # start of year one
