@@ -132,6 +132,9 @@ if options.import_dest:
 def run_server():
     try:
         # Launch server
+        log.debug("Starting HTTP%s server on %s:%d" % ("S" if options.ssl else "",
+                                                       options.host if options.host else "*",
+                                                       options.port))
         server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
         server = server_class(
             (options.host, options.port), calypso.CollectionHTTPHandler)
