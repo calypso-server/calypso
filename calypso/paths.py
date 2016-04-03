@@ -20,7 +20,6 @@
 # along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 import urllib
-import os
 import os.path
 import posixpath # the semantics of urls follow posix rules, not platform dependent rules
 import logging

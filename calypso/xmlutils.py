@@ -37,8 +37,6 @@ import dateutil.tz
 import datetime
 import email.utils
 import logging
-import urllib
-import os.path
 
 from . import client, config, webdav, paths
 

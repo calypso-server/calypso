@@ -1,7 +1,6 @@
 # vim: set fileencoding=utf-8 :
 """Test matching filter handling """
 
-import sys
 import subprocess
 import tempfile
 import shutil

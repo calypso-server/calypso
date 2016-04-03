@@ -1,7 +1,6 @@
 # vim: set fileencoding=utf-8 :
 """Test L{gbp.command_wrappers.Command}'s tarball unpack"""
 
-import os
 import subprocess
 import tempfile
 import shutil

@@ -29,17 +29,13 @@ Define the main classes of a collection as seen from the server.
 import os
 import codecs
 import time
-import calendar
 import hashlib
 import glob
 import logging
 import tempfile
 import vobject
-import string
 import re
 import subprocess
-import urllib
-import copy
 
 from . import config, paths
 
