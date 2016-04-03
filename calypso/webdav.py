@@ -565,13 +565,6 @@ class Collection(object):
         self.scan_dir(False)
         return self.my_items
 
-    def get_color(self):
-        """Color."""
-        try:
-            return "#%s" % self.metadata.get('collection', 'color')
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError, ValueError):
-            return None
-
     @property
     def last_modified(self):
         """Get the last time the collection has been modified.
