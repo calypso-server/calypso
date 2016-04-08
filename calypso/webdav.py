@@ -283,9 +283,12 @@ class Collection(object):
                         self.scan_file(filename)
                     break
             else:
-                self.log.debug("New %s", filename)
-                newfiles.append(Pathtime(filename))
-                self.insert_file(filename)
+                if os.path.isdir(filename):
+                    self.log.debug("Ignoring directory %s in scan_dir", filename)
+                else:
+                    self.log.debug("New %s", filename)
+                    newfiles.append(Pathtime(filename))
+                    self.insert_file(filename)
         for file in self.files:
             if not file.path in filenames:
                 self.log.debug("Removed %s", file.path)
