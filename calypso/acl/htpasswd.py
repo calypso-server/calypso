@@ -59,7 +59,7 @@ def _sha1(hash_value, password):
 
 def has_right(owner, user, password):
     """Check if ``user``/``password`` couple is valid."""
-    log.debug("owner %s user %s", owner, user)
+    log.debug("owner '%s' user '%s'", owner, user)
     for line in open(FILENAME).readlines():
         if line.strip():
             login, hash_value = line.strip().split(":", 1)
