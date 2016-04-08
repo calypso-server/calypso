@@ -53,13 +53,14 @@ except ImportError:
     import BaseHTTPServer as server
 # pylint: enable=F0401
 
-from . import acl, config, webdav, xmlutils, paths
+from . import acl, config, webdav, xmlutils, paths, gssapi
 
 log = logging.getLogger()
 ch = logging.StreamHandler()
 formatter = logging.Formatter("%(message)s")
 ch.setFormatter (formatter)
 log.addHandler(ch)
+negotiate = gssapi.Negotiate(log)
 
 VERSION = "1.5"
 
@@ -67,25 +68,29 @@ def _check(request, function):
     """Check if user has sufficient rights for performing ``request``."""
     # ``_check`` decorator can access ``request`` protected functions
     # pylint: disable=W0212
+    owner = user = password = None
+    negotiate_success = False
 
-    authorization = request.headers.get("Authorization", None)
-    if authorization:
-        challenge = authorization.lstrip("Basic").strip().encode("ascii")
-        plain = request._decode(base64.b64decode(challenge))
-        user, password = plain.split(":")
-    else:
-        user = password = None
-
-    owner = None
     if request._collection:
         owner = request._collection.owner
 
+    authorization = request.headers.get("Authorization", None)
+    if authorization:
+        if authorization.startswith("Basic"):
+            challenge = authorization.lstrip("Basic").strip().encode("ascii")
+            plain = request._decode(base64.b64decode(challenge))
+            user, password = plain.split(":")
+        elif negotiate.enabled():
+            user, negotiate_success = negotiate.try_aaa(authorization, request, owner)
+
     # Also send UNAUTHORIZED if there's no collection. Otherwise one
     # could probe the server for (non-)existing collections.
-    if request.server.acl.has_right(owner, user, password):
+    if request.server.acl.has_right(owner, user, password) or negotiate_success:
         function(request, context={"user": user, "user-agent": request.headers.get("User-Agent", None)})
     else:
         request.send_calypso_response(client.UNAUTHORIZED, 0)
+        if negotiate.enabled():
+            request.send_header("WWW-Authenticate", "Negotiate")
         request.send_header(
             "WWW-Authenticate",
             'Basic realm="Calypso CalDAV/CardDAV server - password required"')
@@ -138,6 +143,21 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
     timeout = 90
 
     server_version = "Calypso/%s" % VERSION
+    queued_headers = {}
+
+    def queue_header(self, keyword, value):
+        self.queued_headers[keyword] = value
+
+    def end_headers(self):
+        """
+        Send out all queued headers and invoke or super classes
+        end_header.
+        """
+        if self.queued_headers:
+            for keyword, val in self.queued_headers.items():
+                self.send_header(keyword, val)
+            self.queued_headers = {}
+        return server.BaseHTTPRequestHandler.end_headers(self)
 
     def address_string(self):
         return str(self.client_address[0])

@@ -60,3 +60,25 @@ Given a set of files with VCALENDAR or VCARD entries, you can import them with:
 $ calypso --import private/test <filenames...>
 
 This will update any changed entries and add any new ones.
+
+Kerberos via GSSAPI support
+---------------------------
+For Kerberos authentication generate a keytab on your KDC and put the
+exported keytab on your calypso server into */etc/krb.keytab* so it
+looks like:
+
+  # ktutil -k /etc/krb5.keytab list
+  /etc/krb5.keytab:
+
+  Vno  Type                     Principal                         Aliases
+    1  aes256-cts-hmac-sha1-96  HTTP/foo.example.com@EXAMPLE.COM
+    1  des3-cbc-sha1            HTTP/foo.example.com@EXAMPLE.COM
+    1  arcfour-hmac-md5         HTTP/foo.example.com@EXAMPLE.COM
+
+the put the service name to use into ~/.config/calypso/config:
+
+  [server]
+  servicename=HTTP@foo.example.com
+
+and install the pykerberos module. You should then be able to authenticate
+via Kerberos using GSSAPI.

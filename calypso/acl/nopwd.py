@@ -29,7 +29,7 @@ log = logging.getLogger()
 
 def has_right(owner, user, password):
     """Check if ``user`` is valid."""
-    log.debug("owner %s user %s", owner, user)
+    log.debug("owner '%s' user '%s'", owner, user)
     if user == owner or not PERSONAL:
         return True
     return False
