@@ -1,3 +1,30 @@
+calypso (1.5-1) unstable; urgency=medium
+
+  [ Keith Packard ]
+  * [96dc2d6] Add dependencies on python-lockfile
+    (Closes: #789905)
+  * [2712225] Update to debian standards version 3.9.6
+
+  [ Guido Günther ]
+  * New upstream version 1.5
+    * Fixes incorrect use of import_item() 
+      (Closes: #753766)
+    * Corrects --import encoding problems
+      (Closes: #780034)
+    * Supports empty request body in propfind
+      (Closes: #753536)
+  * [3e08116] Set calypso alioth project as maintainer
+  * [0970b56] Switch to 3.0 (quilt) instead of a native package
+  * [08a55e3] Don't be verbose by default
+  * [898c149] Add autopkgtest based on caldav-tester.
+    This makes sure the server listens and processes events. This will need
+    more work to pass more parts of the testsuite. (Closes: #743048)
+  * [e6263cd] Bump standards version to 3.9.7 (no changes needed)
+  * [70957f8] Add VCS-{Git,Browser} URLs
+  * [89a7168] Allow one to override calypso's config dir
+
+ -- Guido Günther <agx@sigxcpu.org>  Sat, 09 Apr 2016 19:21:31 +0200
+
 calypso (1.5) unstable; urgency=medium
 
   * Handle --import for non-calendar items
