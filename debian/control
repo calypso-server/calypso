@@ -1,7 +1,10 @@
 Source: calypso
 Section: web
 Priority: extra
-Maintainer: Keith Packard <keithp@keithp.com>
+Maintainer: Debian Calypso Maintaners <calypso-maint@lists.alioth.debian.org>
+Uploaders: Keith Packard <keithp@keithp.com>,
+ Jelmer Vernooĳ <jelmer@jelmer.uk>,
+ Guido Günther <agx@sigxcpu.org>
 Build-Depends: debhelper (>= 8.0.0), python (>= 2.7), python-setuptools, python-vobject, python-daemon, python-lockfile
 Standards-Version: 3.9.6
 Homepage: http://keithp.com/calypso
