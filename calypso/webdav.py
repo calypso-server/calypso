@@ -616,3 +616,17 @@ class Collection(object):
     @property
     def length(self):
         return "%d" % len(self.text)
+
+    @property
+    def is_addressbook(self):
+        try:
+            return self.metadata.getboolean('collection', 'is-addressbook')
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError, ValueError):
+            return True
+
+    @property
+    def is_calendar(self):
+        try:
+            return self.metadata.getboolean('collection', 'is-calendar')
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError, ValueError):
+            return True

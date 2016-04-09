@@ -47,13 +47,21 @@ To add a new database:
 $ mkdir -p ~/.config/calypso/calendars/private/test
 $ cd ~/.config/calypso/calendars/private/test
 $ git init
-$ git commit --allow-empty -m'initialize new calendar'
+$ cat > .calypso-collection << EOF
+[collection]
+is-calendar = 1
+EOF
+$ git add .calypso-collection
+$ git commit -m'initialize new calendar'
 
 The new calendar should now be visible as https://USER:PASSWORD@localhost:5233/private/test.
 
 You can add files to the directory at any time; calypso will check the
 directory mtime at each operation and update its internal state from
-that on disk automatically when the directory changes.  Importing files
+that on disk automatically when the directory changes.
+
+Importing files
+---------------
 
 Given a set of files with VCALENDAR or VCARD entries, you can import them with:
 

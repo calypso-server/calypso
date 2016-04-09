@@ -11,4 +11,11 @@ displayname = My Calendar
 # WebDAV properties. Defaults to the collection's path.
 description = Collection of all my personal dates.
 
+# Advertise this collection as a calendar. If this setting is absent,
+# it defaults to True.
+is-calendar = 1
+# Advertise this collection as an address book. Behaves in analogy to
+# is-calendar.
+is-addressbook = 0
+
 # vim:ft=cfg
