@@ -8,6 +8,8 @@ Uploaders: Keith Packard <keithp@keithp.com>,
 Build-Depends: debhelper (>= 8.0.0), python (>= 2.7), python-setuptools, python-vobject, python-daemon, python-lockfile
 Standards-Version: 3.9.7
 Homepage: http://keithp.com/calypso
+Vcs-Git: https://anonscm.debian.org/git/calypso/calypso.git
+Vcs-Browser: https://anonscm.debian.org/cgit/calypso/calypso.git/
 X-Python-Version: >= 2.7
 XS-Testsuite: autopkgtest
 
