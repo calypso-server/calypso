@@ -72,6 +72,9 @@ for section, values in INITIAL_CONFIG.items():
 
 _CONFIG_PARSER.read("/etc/calypso/config")
 _CONFIG_PARSER.read(os.path.expanduser("~/.config/calypso/config"))
+cfg = os.getenv("CALYPSO_CONFIG")
+if cfg:
+    _CONFIG_PARSER.read(cfg)
 
 # Wrap config module into ConfigParser instance
 sys.modules[__name__] = _CONFIG_PARSER
