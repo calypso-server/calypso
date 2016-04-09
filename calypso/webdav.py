@@ -30,7 +30,6 @@ import os
 import codecs
 import time
 import hashlib
-import glob
 import logging
 import tempfile
 import vobject
@@ -299,25 +298,26 @@ class Collection(object):
             return
         self.log.debug("Scan %s", self.path)
         self.mtime = mtime
-        filenames = glob.glob(self.pattern)
+        filenames = os.listdir(self.path)
         newfiles = []
         for filename in filenames:
             if filename == METADATA_FILENAME:
                 continue
+            filepath = os.path.join(self.path, filename)
             for file in self.files:
-                if filename == file.path:
+                if filepath == file.path:
                     newfiles.append(file)
                     if not file.is_up_to_date():
-                        self.log.debug("Changed %s", filename)
-                        self.scan_file(filename)
+                        self.log.debug("Changed %s", filepath)
+                        self.scan_file(filepath)
                     break
             else:
-                if os.path.isdir(filename):
-                    self.log.debug("Ignoring directory %s in scan_dir", filename)
+                if os.path.isdir(filepath):
+                    self.log.debug("Ignoring directory %s in scan_dir", filepath)
                 else:
-                    self.log.debug("New %s", filename)
-                    newfiles.append(Pathtime(filename))
-                    self.insert_file(filename)
+                    self.log.debug("New %s", filepath)
+                    newfiles.append(Pathtime(filepath))
+                    self.insert_file(filepath)
         for file in self.files:
             if not file.path in filenames:
                 self.log.debug("Removed %s", file.path)
@@ -336,7 +336,6 @@ class Collection(object):
         self.urlpath = path
         self.owner = paths.url_to_owner(path)
         self.path = paths.url_to_file(path)
-        self.pattern = os.path.join(self.path, "*")
         self.files = []
         self.my_items = []
         self.mtime = 0
