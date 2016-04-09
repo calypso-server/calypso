@@ -25,6 +25,6 @@ No rights management.
 
 """
 
-def has_right(*_):
+def has_right(*args, **kwargs):
     """Check if ``user``/``password`` couple is valid."""
     return True

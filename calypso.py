@@ -38,7 +38,6 @@ arguments.
 
 import daemon
 import lockfile
-from lockfile import pidlockfile
 import logging
 import optparse
 import os
@@ -133,6 +132,9 @@ if options.import_dest:
 def run_server():
     try:
         # Launch server
+        log.debug("Starting HTTP%s server on %s:%d" % ("S" if options.ssl else "",
+                                                       options.host if options.host else "*",
+                                                       options.port))
         server_class = calypso.HTTPSServer if options.ssl else calypso.HTTPServer
         server = server_class(
             (options.host, options.port), calypso.CollectionHTTPHandler)
@@ -149,6 +151,7 @@ if not options.daemon:
 context = daemon.DaemonContext()
 context.umask = 0o002
 if options.pidfile:
+    from lockfile import pidlockfile
     # Generate a pidfile where requested
     context.pidfile = pidlockfile.PIDLockFile(options.pidfile)
 with context:

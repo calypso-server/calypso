@@ -20,7 +20,6 @@
 # along with Calypso.  If not, see <http://www.gnu.org/licenses/>.
 
 import urllib
-import os
 import os.path
 import posixpath # the semantics of urls follow posix rules, not platform dependent rules
 import logging
@@ -43,7 +42,15 @@ def url_to_owner(path):
 #
 
 def data_root():
-    return os.path.expanduser(config.get("storage", "folder"))
+    return os.path.expanduser(config.get("storage", "folder")).rstrip('/')
+
+
+#
+# Return the base path for the web server.
+#
+
+def base_prefix():
+    return config.get("server", "base_prefix").rstrip("/")
 
 #
 # Given a URL, convert it to an absolute path name by
@@ -53,11 +60,14 @@ def data_root():
 #
 
 def url_to_file(url):
+    if url.startswith(base_prefix()):
+        url = "/" + url[len(base_prefix()):].lstrip("/")
     tail = urllib.url2pathname(url.strip("/"))
     # eliminate .. components, and potential double leading slashes
     tail = posixpath.normpath('/' + tail).lstrip('/')
     file = os.path.join(data_root(), tail)
     return file
+
 
 #
 # Does the provided URL reference a collection? This
@@ -87,6 +97,15 @@ def parent_url(path):
     return new_path
 
 #
+# Given a URL, return the child URL, which is
+# the last path element
+#
+
+def child_url(path):
+    path_parts = path.strip("/").split("/")
+    return path_parts[len(path_parts)-1]
+
+#
 # If the given URL references a resource, then
 # return the name of that resource. Otherwise,
 # return None
@@ -96,10 +115,23 @@ log = logging.getLogger()
 
 def resource_from_path(path):
     """Return Calypso item name from ``path``."""
-    if is_collection(path):
-        name = None
+
+    child_path = None
+    collection = path
+
+    while collection != '/' and not is_collection(collection):
+        child = child_url(collection)
+        if child_path:
+            child_path = child + "/" + child_path
+        else:
+            child_path = child
+        collection = parent_url(collection)
+
+    if child_path:
+        name = urllib.unquote(child_path)
     else:
-        name = urllib.unquote(path.strip("/").split("/")[-1])
+        name = None
+
     log.debug('Path %s results in name: %s', path, name)
     return name
 
@@ -113,11 +145,12 @@ def collection_from_path(path):
     """Returns Calypso collection name from ``path``."""
 
     collection = path
-    if not is_collection(collection):
+    while collection != '/' and not is_collection(collection):
         collection = parent_url(collection)
-        if not is_collection(collection):
-            log.debug("No collection found for path %s", path)
-            return None
+
+    if not collection:
+        log.debug("No collection found for path %s", path)
+        return None
 
     # unquote, strip off any trailing slash, then clean up /../ and // entries
     collection = "/" + urllib.unquote(collection).strip("/")

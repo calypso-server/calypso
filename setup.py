@@ -32,7 +32,7 @@ and Sunbird 0.9+. It is free and open-source software, released under GPL
 version 3.
 
 For further information, please visit the `Calypso Website
-<http://www.calypso.org/>`_.
+<http://keithp.com/blogs/calypso/>`_.
 
 """
 
@@ -71,13 +71,14 @@ setup(
     long_description=__doc__,
     author="Keith Packard",
     author_email="keithp@keithp.com",
-    url="http://keithp.com/",
-    download_url="http://keithp.com/git/calypso",
+    url="http://keithp.com/blogs/calypso/",
+    download_url="https://anonscm.debian.org/cgit/calypso/calypso.git/",
     license="GNU GPL v3",
     platforms="Any",
     packages=["calypso", "calypso.acl"],
     provides=["calypso"],
     install_requires=["daemon","vobject"],
+    test_requires=['nose>=0.11.1'],
     scripts=["calypso.py"],
     cmdclass={"build_scripts": BuildScripts},
     keywords=["calendar", "CalDAV"],

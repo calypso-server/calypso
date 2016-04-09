@@ -37,8 +37,6 @@ import dateutil.tz
 import datetime
 import email.utils
 import logging
-import urllib
-import os.path
 
 from . import client, config, webdav, paths
 
@@ -86,7 +84,7 @@ def delete(path, collection, context):
     return ET.tostring(multistatus, config.get("encoding", "request"))
 
 
-def propfind(path, xml_request, collection, depth):
+def propfind(path, xml_request, collection, depth, context):
     """Read and answer PROPFIND requests.
 
     Read rfc4918-9.1 for info.
@@ -96,10 +94,14 @@ def propfind(path, xml_request, collection, depth):
     item_name = paths.resource_from_path(path)
     collection_name = paths.collection_from_path(path)
 
-    # Reading request
-    root = ET.fromstring(xml_request)
+    if xml_request:
+        # Reading request
+        root = ET.fromstring(xml_request)
 
-    prop_element = root.find(_tag("D", "prop"))
+        prop_element = root.find(_tag("D", "prop"))
+    else:
+        prop_element = None
+
     if prop_element is not None:
         prop_list = prop_element.getchildren()
         props = [prop.tag for prop in prop_list]
@@ -210,6 +212,13 @@ def propfind(path, xml_request, collection, depth):
 #                element.text = time.strftime("%a, %d %b %Y %H:%M:%S +0000", item.last_modified)
 #                element.text = email.utils.formatdate(item.last_modified)
                 element.text = email.utils.formatdate(time.mktime(item.last_modified))
+            elif tag == _tag("D", "current-user-principal"):
+                tag = ET.Element(_tag("D", "href"))
+                tag.text = config.get("server", "user_principal") % context
+                element.append(tag)
+            elif tag in (_tag("A", "addressbook-description"),
+                         _tag("C", "calendar-description")) and is_collection:
+                element.text = collection.get_description()
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))
@@ -261,6 +270,19 @@ def match_filter_element(vobject, fe):
             return False
         start = fe.get("start")
         end = fe.get("end")
+        # According to RFC 4791, one of start and stop must be set,
+        # but the other can be empty.  If both are empty, the
+        # specification is violated.
+        if start is None and end is None:
+            msg = "time-range missing both start and stop attribute (required by RFC 4791)"
+            log.error(msg)
+            raise ValueError(msg)
+        # RFC 4791 state if start is missing, assume it is -infinity
+        if start is None:
+            start = "00010101T000000Z"  # start of year one
+        # RFC 4791 state if end is missing, assume it is +infinity
+        if end is None:
+            end = "99991231T235959Z"  # last date with four digit year
         if rruleset is None:
             rruleset = dateutil.rrule.rruleset()
             dtstart = vobject.dtstart.value
@@ -299,6 +321,7 @@ def match_filter(item, filter):
     for fe in filter.getchildren():
         if match_filter_element(item.object, fe):
             return True
+    return False
 
 def report(path, xml_request, collection):
     """Read and answer REPORT requests.
@@ -316,7 +339,7 @@ def report(path, xml_request, collection):
     filter_element = root.find(_tag("C", "filter"))
 
     if collection:
-        if root.tag == _tag("C", "calendar-multiget"):
+        if root.tag == _tag("C", "calendar-multiget") or root.tag == _tag('A', 'addressbook-multiget'):
             # Read rfc4791-7.9 for info
             hreferences = set((href_element.text for href_element
                                in root.findall(_tag("D", "href"))))

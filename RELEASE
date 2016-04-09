@@ -1,17 +1,17 @@
-Calypso eelease process
+Calypso release process
 
-1) Set version in calypso/__init__.py. Commit to master
+Upstream:
 
-2) Tag master branch with version number
+1) Run the tests (./setup.py nosetests)
 
-3) Merge master to debian branch.
+2) Set version in calypso/__init__.py. Commit to master
 
-4) Update debian/changelog. Commit to debian
+3) Tag master branch with version number
 
-5) sh ./release.sh
+4) Push master branch and tag to alioth repository.
 
-6) sh ./upload.sh
+5) Send mail to the calypso@keithp.com mailing list
 
-7) Update calypso.mdwn page to add link for new release tarball
+ To generate the history, use e.g.:
 
-8) Send mail to the calypso@keithp.com mailing list
+ $ git log --format=tformat:%s\ \(%an\) 1.4.. > ChangeLog

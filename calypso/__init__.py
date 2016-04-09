@@ -88,7 +88,7 @@ def _check(request, function):
         request.send_calypso_response(client.UNAUTHORIZED, 0)
         request.send_header(
             "WWW-Authenticate",
-            "Basic realm=\"Calypso %s - password required\"" % VERSION)
+            'Basic realm="Calypso CalDAV/CardDAV server - password required"')
         request.end_headers()
     # pylint: enable=W0212
 
@@ -341,6 +341,10 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", "text/xml")
                 self.end_headers()
                 self.wfile.write(self._answer)
+            elif not item:
+                # Item does not exist
+                self.send_calypso_response(client.NOT_FOUND, 0)
+                self.end_headers()
             else:
                 # No item or ETag precondition not verified, do not delete item
                 self.send_calypso_response(client.PRECONDITION_FAILED, 0)
@@ -356,8 +360,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         self.send_calypso_response(client.CREATED, 0)
         self.end_headers()
 
-    @check_rights
-    def do_OPTIONS(self, context):
+    def do_OPTIONS(self):
         """Manage OPTIONS request."""
         self.send_calypso_response(client.OK, 0)
         self.send_header(
@@ -374,7 +377,8 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.debug("PROPFIND %s", xml_request)
             self._answer = xmlutils.propfind(
                 self.path, xml_request, self._collection,
-                self.headers.get("depth", "infinity"))
+                self.headers.get("depth", "infinity"),
+                context)
             log.debug("PROPFIND ANSWER %s", self._answer)
 
             self.send_calypso_response(client.MULTI_STATUS, len(self._answer))

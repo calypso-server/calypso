@@ -29,17 +29,13 @@ Define the main classes of a collection as seen from the server.
 import os
 import codecs
 import time
-import calendar
 import hashlib
 import glob
 import logging
 import tempfile
 import vobject
-import string
 import re
 import subprocess
-import urllib
-import copy
 
 from . import config, paths
 
@@ -207,7 +203,7 @@ class Pathtime(object):
     """Path name and timestamps"""
 
     def __init__(self, path):
-    	self.path = path
+        self.path = path
         self.mtime = self.curmtime
 
     @property
@@ -231,6 +227,14 @@ class CalypsoError(Exception):
 
 class Collection(object):
     """Internal collection class."""
+
+    def get_description(self):
+        try:
+            f = codecs.open(os.path.join(self.path, ".git/description"), encoding='utf-8')
+        except IOError:
+            # .git/description is not present eg when the complete server is a single git repo
+            return self.urlpath
+        return f.read()
 
     def read_file(self, path):
         text = codecs.open(path,encoding='utf-8').read()
@@ -279,9 +283,12 @@ class Collection(object):
                         self.scan_file(filename)
                     break
             else:
-                self.log.debug("New %s", filename)
-                newfiles.append(Pathtime(filename))
-                self.insert_file(filename)
+                if os.path.isdir(filename):
+                    self.log.debug("Ignoring directory %s in scan_dir", filename)
+                else:
+                    self.log.debug("New %s", filename)
+                    newfiles.append(Pathtime(filename))
+                    self.insert_file(filename)
         for file in self.files:
             if not file.path in filenames:
                 self.log.debug("Removed %s", file.path)
@@ -297,6 +304,7 @@ class Collection(object):
         
         self.log = logging.getLogger(__name__)
         self.encoding = "utf-8"
+        self.urlpath = path
         self.owner = paths.url_to_owner(path)
         self.path = paths.url_to_file(path)
         self.pattern = os.path.join(self.path, "*")
@@ -501,21 +509,22 @@ class Collection(object):
         """
 
         try:
-            new_ics = vobject.readOne(codecs.open(path,encoding='utf-8').read())
-            if new_ics.name == 'VCALENDAR':
+            new_object = vobject.readComponents(codecs.open(path,encoding='utf-8').read())
+            for new_ics in new_object:
+                if new_ics.name == 'VCALENDAR':
 
-                events = new_ics.vevent_list
-                for ve in events:
-                    # Check for events with both dtstart and duration entries and
-                    # delete the duration one
-                    if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
-                        del ve.contents['duration']
-                    new_ics.vevent_list = [ve]
-                    new_item = Item(new_ics.serialize(), None, path)
+                    events = new_ics.vevent_list
+                    for ve in events:
+                        # Check for events with both dtstart and duration entries and
+                        # delete the duration one
+                        if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
+                            del ve.contents['duration']
+                        new_ics.vevent_list = [ve]
+                        new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
+                        self.import_item(new_item, path)
+                else:
+                    new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
                     self.import_item(new_item, path)
-            else:
-                new_item = Item(new_ics.serialize(), None, path)
-                self.import_item(new_item, path)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
