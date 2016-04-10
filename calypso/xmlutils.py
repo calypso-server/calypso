@@ -125,7 +125,7 @@ def propfind(path, xml_request, collection, depth, context):
     if collection:
         if item_name:
             item = collection.get_item(item_name)
-            print "item_name %s item %s" % (item_name, item)
+            log.debug("item_name %s item %s" % (item_name, item))
             if item:
                 items = [item]
             else:

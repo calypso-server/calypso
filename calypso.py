@@ -118,7 +118,7 @@ if options.import_dest:
     try:
         collection = webdav.Collection(options.import_dest)
     except Exception:
-        print "Cannot open collection %s" % options.import_dest
+        log.error("Cannot open collection %s" % options.import_dest)
         sys.exit(1)
     success = True
     for arg in args:
