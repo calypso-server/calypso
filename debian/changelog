@@ -1,3 +1,11 @@
+calypso (1.5-2) unstable; urgency=medium
+
+  * [8ad4377] Robustify autopktest.
+    Don't fork but rather put the daemon into background, dump the log on
+    stdout in case of a test failure and make us pass with dash as /bin/sh.
+
+ -- Guido Günther <agx@sigxcpu.org>  Sun, 10 Apr 2016 13:36:33 +0200
+
 calypso (1.5-1) unstable; urgency=medium
 
   [ Keith Packard ]
