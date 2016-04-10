@@ -5,18 +5,27 @@ TESTS="\
     CalDAV/vtodos.xml \
 "
 
+CALYPSO_PID=
+DAEMON_LOG="${0}_daemon.log"
+
 set -e
 
 cleanup ()
 {
-   kill $(cat $WORKDIR/pid)
+   [ -z $CALYPSO_PID ] || kill $CALYPSO_PID
    rm --preserve-root -rf $WORKDIR
+}
+
+run_calypso ()
+{
+    # Run the server
+    ./calypso.py -g >$DAEMON_LOG 2>&1 &
+    CALYPSO_PID=$!
+    sleep 2
 }
 
 WORKDIR=$(mktemp -d)
 trap cleanup 0 INT QUIT ABRT PIPE TERM
-
-export CALYPSO_CONFIG=$WORKDIR/config
 
 # Initial calendars
 CALENDARS="\
@@ -30,7 +39,8 @@ for d in $CALENDARS; do
 done
 
 # config
-cat <<EOF > $WORKDIR/config
+export CALYPSO_CONFIG=$WORKDIR/config
+cat > $CALYPSO_CONFIG <<EOF
 [server]
 ssl=false
 
@@ -44,11 +54,13 @@ folder=$WORKDIR/
 EOF
 echo "user01:user01" > $WORKDIR/passwd
 
-# Run the server
-calypso -d -P $WORKDIR/pid
-sleep 2
+run_calypso
 
 # Run the tests
-testcaldav -s $PWD/debian/tests/serverinfo.xml $TESTS
+if ! testcaldav -s $PWD/debian/tests/serverinfo.xml $TESTS; then
+    echo "*** Tests failed, daemon log follows:"
+    cat $DAEMON_LOG
+    exit 1
+fi
 
 echo "run: OK"
