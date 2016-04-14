@@ -158,10 +158,10 @@ def propfind(path, xml_request, collection, depth, context):
         for tag in props:
             element = ET.Element(tag)
             if tag == _tag("D", "resourcetype") and is_collection:
-                if collection.is_calendar:
+                if item.is_calendar:
                     tag = ET.Element(_tag("C", "calendar"))
                     element.append(tag)
-                if collection.is_addressbook:
+                if item.is_addressbook:
                     tag = ET.Element(_tag("A", "addressbook"))
                     element.append(tag)
                 tag = ET.Element(_tag("D", "collection"))
@@ -178,9 +178,9 @@ def propfind(path, xml_request, collection, depth, context):
             elif tag == _tag("D", "getetag"):
                 element.text = item.etag
             elif tag == _tag("D", "displayname") and is_collection:
-                element.text = collection.name
+                element.text = item.name
             elif tag == _tag("E", "calendar-color") and is_collection:
-                element.text = collection.color
+                element.text = item.color
             elif tag == _tag("D", "principal-URL"):
                 # TODO: use a real principal URL, read rfc3744-4.2 for info
                 tag = ET.Element(_tag("D", "href"))
@@ -222,7 +222,7 @@ def propfind(path, xml_request, collection, depth, context):
                 element.append(tag)
             elif tag in (_tag("A", "addressbook-description"),
                          _tag("C", "calendar-description")) and is_collection:
-                element.text = collection.get_description()
+                element.text = item.get_description()
             prop.append(element)
 
         status = ET.Element(_tag("D", "status"))
