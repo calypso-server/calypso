@@ -398,13 +398,19 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
         try:
             xml_request = self.xml_request
             log.debug("PROPFIND %s", xml_request)
-            self._answer = xmlutils.propfind(
-                self.path, xml_request, self._collection,
-                self.headers.get("depth", "infinity"),
-                context)
+            depth = self.headers.get("depth", "infinity")
+            if depth != "infinity":
+                self._answer = xmlutils.propfind(
+                    self.path, xml_request, self._collection,
+                    depth, context)
+                status = client.MULTI_STATUS
+            else:
+                self._answer = xmlutils.propfind_deny()
+                status = client.FORBIDDEN
+
             log.debug("PROPFIND ANSWER %s", self._answer)
 
-            self.send_calypso_response(client.MULTI_STATUS, len(self._answer))
+            self.send_calypso_response(status, len(self._answer))
             self.send_header("DAV", "1, calendar-access")
             self.send_header("Content-Type", "text/xml")
             self.end_headers()

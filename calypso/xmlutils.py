@@ -134,8 +134,7 @@ def propfind(path, xml_request, collection, depth, context):
             if depth == "0":
                 items = [collection]
             else:
-                # depth is 1, infinity or not specified
-                # we limit ourselves to depth == 1
+                # We limit ourselves to depth == 1
                 items = [collection] + collection.items
     else:
         items = []
@@ -231,6 +230,17 @@ def propfind(path, xml_request, collection, depth, context):
         propstat.append(status)
 
     return ET.tostring(multistatus, config.get("encoding", "request"))
+
+
+def propfind_deny():
+    """Answer an infinity PROPFIND requests.
+
+    Read rfc4918-9.1.1 for info.
+    """
+    error = ET.Element(_tag("D", "error"))
+    prec_code = ET.Element(_tag("D", "propfind-finite-depth"))
+    error.append(prec_code)
+    return ET.tostring(error, config.get("encoding", "request"))
 
 
 def put(path, webdav_request, collection, context):
