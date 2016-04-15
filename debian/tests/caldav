@@ -19,7 +19,7 @@ cleanup ()
 run_calypso ()
 {
     # Run the server
-    ./calypso.py -g >$DAEMON_LOG 2>&1 &
+    calypso -g >$DAEMON_LOG 2>&1 &
     CALYPSO_PID=$!
     sleep 2
 }
