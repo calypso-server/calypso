@@ -1,3 +1,10 @@
+calypso (1.5-3) unstable; urgency=medium
+
+  * [55a540b] autopkg test: run the installed calypso not the one from our
+    source dir
+
+ -- Guido Günther <agx@sigxcpu.org>  Fri, 15 Apr 2016 18:38:39 +0200
+
 calypso (1.5-2) unstable; urgency=medium
 
   * [8ad4377] Robustify autopktest.
