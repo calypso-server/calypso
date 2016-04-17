@@ -39,6 +39,9 @@ for d in $CALENDARS; do
 done
 
 # config
+git config --global user.email "calypso@example.com"
+git config --global user.name "Cal Ypso"
+
 export CALYPSO_CONFIG=$WORKDIR/config
 cat > $CALYPSO_CONFIG <<EOF
 [server]
