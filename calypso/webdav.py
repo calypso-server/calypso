@@ -115,12 +115,16 @@ class Item(object):
             return True
         if self.object.name == 'VEVENT':
             return False
+        if self.object.name == 'VTODO':
+            return False
         if self.object.name == 'VCALENDAR':
             return False
         for child in self.object.getChildren():
             if child.name == 'VCARD':
                 return True
             if child.name == 'VEVENT':
+                return False
+            if child.name == 'VTODO':
                 return False
         return False
 
@@ -131,12 +135,16 @@ class Item(object):
             return False
         if self.object.name == 'VEVENT':
             return True
+        if self.object.name == 'VTODO':
+            return True
         if self.object.name == 'VCALENDAR':
             return True
         for child in self.object.getChildren():
             if child.name == 'VCARD':
                 return False
             if child.name == 'VEVENT':
+                return True
+            if child.name == 'VTODO':
                 return True
         return False
 
