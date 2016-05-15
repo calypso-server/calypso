@@ -270,6 +270,14 @@ class Collection(object):
             self.log.exception("Insert %s failed", path)
             return
 
+    def insert_directory(self, path):
+         try:
+            item = Collection(path)
+            self.my_items.append(item)
+         except Exception, ex:
+            self.log.exception("Insert %s failed", path)
+            return
+
     def remove_file(self, path):
         old_items=[]
         for old_item in self.my_items:
@@ -316,6 +324,8 @@ class Collection(object):
         for filename in filenames:
             if filename == METADATA_FILENAME:
                 continue
+            if filename == '.git':
+                continue
             filepath = os.path.join(self.path, filename)
             for file in self.files:
                 if filepath == file.path:
@@ -325,25 +335,28 @@ class Collection(object):
                         self.scan_file(filepath)
                     break
             else:
-                if os.path.isdir(filepath):
-                    self.log.debug("Ignoring directory %s in scan_dir", filepath)
-                else:
-                    self.log.debug("New %s", filepath)
-                    newfiles.append(Pathtime(filepath))
+                self.log.debug("New %s", filepath)
+                newfiles.append(Pathtime(filepath))
+                if not os.path.isdir(filepath):
                     self.insert_file(filepath)
+                else:
+                    self.insert_directory("/".join([self.urlpath, filename]))
         for file in self.files:
             if not file.path in filenames:
                 self.log.debug("Removed %s", file.path)
                 self.remove_file(file.path)
         h = hashlib.sha1()
         for item in self.my_items:
-            h.update(item.etag)
+            if getattr(item, 'etag', None):
+                h.update(item.etag)
+            else:
+                h.update(item.ctag)
         self._ctag = '%d-' % self.mtime + h.hexdigest()
         self.files = newfiles
-                
+
     def __init__(self, path):
         """Initialize the collection with ``cal`` and ``user`` parameters."""
-        
+
         self.log = logging.getLogger(__name__)
         self.encoding = "utf-8"
         self.urlpath = path
