@@ -58,11 +58,12 @@ def find_vobject_value(vobject, name):
             return value
     return None
 
+
 class Item(object):
 
     """Internal item. Wraps a vObject"""
 
-    def __init__(self, text, name=None, path=None):
+    def __init__(self, text, name=None, path=None, parent_urlpath=None):
         """Initialize object from ``text`` and different ``kwargs``."""
 
         self.log = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class Item(object):
 
         self.path = path
         self.name = self.object.x_calypso_name.value
+        self.urlpath = "/".join([parent_urlpath, self.name])
         self.tag = self.object.name
         self.etag = hashlib.sha1(text).hexdigest()
 
@@ -259,7 +261,7 @@ class Collection(object):
 
     def read_file(self, path):
         text = codecs.open(path,encoding='utf-8').read()
-        item = Item(text, None, path)
+        item = Item(text, None, path, self.urlpath)
         return item
 
     def insert_file(self, path):
@@ -508,7 +510,7 @@ class Collection(object):
 
         self.log.debug('append name %s', name)
         try:
-            new_item = Item(text, name, None)
+            new_item = Item(text, name, None, self.urlpath)
         except Exception, e:
             self.log.exception("Cannot create new item")
             raise
@@ -535,7 +537,7 @@ class Collection(object):
             path = old_item.path
 
         try:
-            new_item = Item(text, name, path)
+            new_item = Item(text, name, path, self.urlpath)
         except Exception:
             self.log.exception("Failed to replace %s", name)
             raise
@@ -576,16 +578,16 @@ class Collection(object):
                         if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
                             del ve.contents['duration']
                         new_ics.vevent_list = [ve]
-                        new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
+                        new_item = Item(new_ics.serialize().decode('utf-8'), None, path, self.urlpath)
                         self.import_item(new_item, path)
                 else:
-                    new_item = Item(new_ics.serialize().decode('utf-8'), None, path)
+                    new_item = Item(new_ics.serialize().decode('utf-8'), None, path, self.urlpath)
                     self.import_item(new_item, path)
             return True
         except Exception, ex:
             self.log.exception("Failed to import: %s", path)
             return False
-        
+
     def write(self, headers=None, items=None):
         return True
 

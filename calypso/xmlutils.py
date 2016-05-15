@@ -146,7 +146,7 @@ def propfind(path, xml_request, collection, depth, context):
         multistatus.append(response)
 
         href = ET.Element(_tag("D", "href"))
-        href.text = collection_name if is_collection else "/".join([collection_name, item.name])
+        href.text = item.urlpath
         response.append(href)
 
         propstat = ET.Element(_tag("D", "propstat"))
