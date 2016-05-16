@@ -35,6 +35,7 @@ import tempfile
 import vobject
 import re
 import subprocess
+import vobject.base
 
 import ConfigParser
 
@@ -171,7 +172,11 @@ class Item(object):
         Text is the serialized form of the item.
 
         """
-        return self.object.serialize().decode('utf-8')
+        try:
+            return self.object.serialize().decode('utf-8')
+        except vobject.base.ValidateError, e:
+            self.log.warn('Validation error %s in %s', e, self.urlpath)
+            return self.object.serialize(validate=False).decode('utf-8')
 
     @property
     def length(self):
