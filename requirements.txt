@@ -1,2 +1,2 @@
-daemon==1.5.5
+python-daemon==2.1.1
 vobject==0.8.1c
