@@ -20,7 +20,7 @@ class TestCollection(CalypsoTestCase):
         self.assertTrue(collection.import_file(self.test_vcard))
         self.assertEqual(len(collection.items), 2)
         org = u'Universitetet i Tromsø'
-        self.assertTrue(org == collection.items[0].object.org.value[0])
+        self.assertEquals(org, collection.items[0].object.org.value[0])
 
     def test_uid_with_slash(self):
         collection = Collection("/")
@@ -29,5 +29,5 @@ class TestCollection(CalypsoTestCase):
         veventuid = collection.items[0].object.vevent.uid.value
         r = paths.resource_from_path(veventuid)
         c = paths.collection_from_path(veventuid)
-        self.assertTrue(r == veventuid)
-        self.assertTrue("/" == c)
+        self.assertEquals(r, veventuid)
+        self.assertEquals("/", c)
