@@ -1,28 +1,19 @@
 # vim: set fileencoding=utf-8 :
-"""Test L{gbp.command_wrappers.Command}'s tarball unpack"""
 
 import subprocess
 import tempfile
 import shutil
 import unittest
 
-import calypso.config
 from calypso.webdav import Collection
 from calypso import paths
 
+from .testutils import CalypsoTestCase
 
-class TestCollection(unittest.TestCase):
+
+class TestCollection(CalypsoTestCase):
     test_vcard = "tests/data/import.vcard"
     test_resource_with_slash = "tests/data/from-tripsync.ics"
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        calypso.config.set('storage', 'folder', self.tmpdir)
-        subprocess.call(["git", "init", self.tmpdir]),
-
-    def tearDown(self):
-        if self.tmpdir:
-            shutil.rmtree(self.tmpdir)
 
     def test_import_file(self):
         collection = Collection("")

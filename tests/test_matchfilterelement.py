@@ -7,22 +7,14 @@ import shutil
 import unittest
 import xml.etree.ElementTree as ET
 
-import calypso.config
 from calypso.webdav import Collection
 from calypso import xmlutils
 
+from .testutils import CalypsoTestCase
 
-class TestMatchFilterElement(unittest.TestCase):
+
+class TestMatchFilterElement(CalypsoTestCase):
     test_vcal = "tests/data/import.vcalendar"
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        calypso.config.set('storage', 'folder', self.tmpdir)
-        subprocess.call(["git", "init", self.tmpdir]),
-
-    def tearDown(self):
-        if self.tmpdir:
-            shutil.rmtree(self.tmpdir)
 
     def test_start_end(self):
         """
