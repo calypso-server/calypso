@@ -1,2 +1,2 @@
 python-daemon==2.1.1
-vobject==0.8.1c
+git+https://github.com/eventable/vobject@0.8.2#egg=vobject
