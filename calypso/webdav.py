@@ -345,7 +345,7 @@ class Collection(object):
                     self.insert_directory("/".join([self.urlpath, filename]))
         for file in self.files:
             if os.path.basename(file.path) not in filenames:
-                self.log.debug("Removed %s %s", file.path)
+                self.log.debug("Removed %s", file.path)
                 self.remove_file(file.path)
         h = hashlib.sha1()
         for item in self.my_items:
