@@ -272,10 +272,10 @@ class Collection(object):
             return
 
     def insert_directory(self, path):
-         try:
+        try:
             item = Collection(path)
             self.my_items.append(item)
-         except Exception, ex:
+        except Exception, ex:
             self.log.exception("Insert %s failed", path)
             return
 
