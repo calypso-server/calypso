@@ -19,7 +19,7 @@ class TestCollection(CalypsoTestCase):
         collection = Collection("")
         self.assertTrue(collection.import_file(self.test_vcard))
         self.assertEqual(len(collection.items), 2)
-        org = u'Universitetet i Tromsø'
+        org = u'Universitetet i Tromsø'.encode('utf-8')
         self.assertEquals(org, collection.items[0].object.org.value[0])
 
     def test_remove_existent_item(self):

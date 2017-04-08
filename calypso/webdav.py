@@ -433,9 +433,15 @@ class Collection(object):
         self.log.debug('Wrote %s to %s', file, path)
         return path
 
+    def _action_msg(self, action, item):
+        return u'%s %s' % (action, str(item).decode('utf-8'))
+
+    def _log_action(self, action, item):
+        self.log.debug("%s %s", action, item.name.decode('utf-8'))
+
     def create_file(self, item, context):
         # Create directory if necessary
-        self.log.debug("Add %s", item.name)
+        self._log_action("Add", item)
         if not os.path.exists(os.path.dirname(self.path)):
             try:
                 os.makedirs(os.path.dirname(self.path))
@@ -443,8 +449,7 @@ class Collection(object):
                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
                 raise
 
-        context['action'] = u'Add %s'%item
-
+        context['action'] = self._action_msg("Add", item)
         try:
             path = self.write_file(item)
             self.git_add(path, context=context)
@@ -458,10 +463,8 @@ class Collection(object):
             raise
 
     def destroy_file(self, item, context):
-        self.log.debug("Remove %s", item.name)
-
-        context['action'] = u'Remove %s'%item
-
+        self._log_action("Remove", item)
+        context['action'] = self._action_msg("Remove", item)
         try:
             os.unlink(item.path)
             self.git_rm(item.path, context=context)
@@ -471,10 +474,8 @@ class Collection(object):
             raise
 
     def rewrite_file(self, item, context):
-        self.log.debug("Change %s", item.name)
-
-        context['action'] = u'Modify %s'%item
-
+        self._log_action("Change", item)
+        context['action'] = self._action_msg("Modify", item)
         try:
             new_path = self.write_file(item)
             os.rename(new_path, item.path)
