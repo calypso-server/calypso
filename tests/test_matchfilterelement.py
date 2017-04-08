@@ -85,4 +85,3 @@ missing.
                 with self.assertRaisesRegexp(ValueError, "time-range missing both start and stop attribute"):
                     xmlutils.match_filter(item, filter_element)
         # The text vcalendar entry is either before or after the cutoff point.
-

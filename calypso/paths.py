@@ -157,4 +157,3 @@ def collection_from_path(path):
 
     log.debug('Path %s results in collection: %s', path, collection)
     return collection
-    

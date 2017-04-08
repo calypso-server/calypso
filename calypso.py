@@ -23,7 +23,7 @@
 # This file is just a script, allow [a-z0-9]* variable names
 # pylint: disable-msg=C0103
 
-# ``import calypso`` refers to the ``calypso`` module, not ``calypso.py`` 
+# ``import calypso`` refers to the ``calypso`` module, not ``calypso.py``
 # pylint: disable-msg=W0406
 
 """
@@ -88,7 +88,7 @@ parser.add_option(
     "-P", "--pid-file", dest="pidfile",
     default=calypso.config.get("server", "pidfile"),
     help="set location of process-id file")
-    
+
 (options, args) = parser.parse_args()
 
 # Update Calypso configuration according to options
@@ -111,7 +111,7 @@ else:
     log.setLevel(logging.WARN)
     ch.setLevel(logging.WARN)
     logging.basicConfig(level=logging.WARN)
-    
+
 
 # Run import if requested
 if options.import_dest:

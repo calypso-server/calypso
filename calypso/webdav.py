@@ -97,7 +97,7 @@ class Item(object):
                             break
                     if not name:
                         name = hashlib.sha1(text).hexdigest()
-                
+
             self.object.add("X-CALYPSO-NAME").value = name
         else:
             names = self.object.contents[u'x-calypso-name']
@@ -286,7 +286,7 @@ class Collection(object):
                 old_items.append(old_item)
         for old_item in old_items:
             self.my_items.remove(old_item)
-        
+
     def scan_file(self, path):
         self.remove_file(path)
         self.insert_file(path)
@@ -378,7 +378,7 @@ class Collection(object):
 
     def __repr__(self):
         return "<Calendar %s>" % (self.name)
-        
+
     def has_git(self):
         return True
 
@@ -408,7 +408,7 @@ class Collection(object):
         if self.has_git():
             subprocess.check_call(["git", "add", os.path.basename(path)], cwd=self.path)
             self.git_commit(context=context)
-    
+
     def git_rm(self, path, context):
         if self.has_git():
             subprocess.check_call(["git", "rm", os.path.basename(path)], cwd=self.path)
@@ -423,7 +423,7 @@ class Collection(object):
                 os.utime(self.path, None)
             except Exception, ex:
                 self.log.exception("Failed to set directory mtime")
-            
+
     def write_file(self, item):
         fd, path = tempfile.mkstemp(item.file_extension, item.file_prefix, dir=self.path)
         self.log.debug('Trying to write to %s', path)
@@ -484,7 +484,7 @@ class Collection(object):
         except Exception, ex:
             self.log.exception("Failed to rewrite %s", item.path)
             raise
-        
+
     def get_item(self, name):
         """Get collection item called ``name``."""
         for item in self.my_items:
@@ -526,7 +526,7 @@ class Collection(object):
         for old_item in self.my_items:
             if old_item.name == name:
                 self.destroy_file(old_item, context=context)
-                
+
     def replace(self, name, text, context):
         """Replace content by ``text`` in objet named ``name`` in collection."""
 
