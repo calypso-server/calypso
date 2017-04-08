@@ -233,7 +233,7 @@ class CollectionHTTPHandler(server.BaseHTTPRequestHandler):
             log.error("Request timed out: %r", e)
             self.close_connection = 1
             return
-        except ssl.SSLError, x:
+        except ssl.SSLError as x:
             #an io error. Discard this connection
             log.error("SSL request error: %r", x.args[0])
             self.close_connection = 1

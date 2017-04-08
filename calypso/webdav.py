@@ -175,7 +175,7 @@ class Item(object):
         """
         try:
             return self.object.serialize().decode('utf-8')
-        except vobject.base.ValidateError, e:
+        except vobject.base.ValidateError as e:
             self.log.warn('Validation error %s in %s', e, self.urlpath)
             return self.object.serialize(validate=False).decode('utf-8')
 
@@ -267,7 +267,7 @@ class Collection(object):
         try:
             item = self.read_file(path)
             self.my_items.append(item)
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Insert %s failed", path)
             return
 
@@ -275,7 +275,7 @@ class Collection(object):
         try:
             item = Collection(path)
             self.my_items.append(item)
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Insert %s failed", path)
             return
 
@@ -421,7 +421,7 @@ class Collection(object):
             # Touch directory so that another running instance will update
             try:
                 os.utime(self.path, None)
-            except Exception, ex:
+            except Exception as ex:
                 self.log.exception("Failed to set directory mtime")
 
     def write_file(self, item):
@@ -445,7 +445,7 @@ class Collection(object):
         if not os.path.exists(os.path.dirname(self.path)):
             try:
                 os.makedirs(os.path.dirname(self.path))
-            except OSError, ose:
+            except OSError as ose:
                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
                 raise
 
@@ -454,10 +454,10 @@ class Collection(object):
             path = self.write_file(item)
             self.git_add(path, context=context)
             self.scan_dir(True)
-        except OSError, ex:
+        except OSError as ex:
             self.log.exception("Error writing file")
             raise
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Caught Exception")
             self.log.debug("Failed to create %s: %s", self.path,  ex)
             raise
@@ -469,7 +469,7 @@ class Collection(object):
             os.unlink(item.path)
             self.git_rm(item.path, context=context)
             self.scan_dir(True)
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Failed to remove %s", item.path)
             raise
 
@@ -482,7 +482,7 @@ class Collection(object):
             self.scan_file(item.path)
             self.git_change(item.path, context=context)
             self.scan_dir(True)
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Failed to rewrite %s", item.path)
             raise
 
@@ -511,7 +511,7 @@ class Collection(object):
         self.log.debug('append name %s', name)
         try:
             new_item = Item(text, name, None, self.urlpath)
-        except Exception, e:
+        except Exception as e:
             self.log.exception("Cannot create new item")
             raise
         if new_item.name in (item.name for item in self.my_items):
@@ -584,7 +584,7 @@ class Collection(object):
                     new_item = Item(new_ics.serialize().decode('utf-8'), None, path, self.urlpath)
                     self.import_item(new_item, path)
             return True
-        except Exception, ex:
+        except Exception as ex:
             self.log.exception("Failed to import: %s", path)
             return False
 

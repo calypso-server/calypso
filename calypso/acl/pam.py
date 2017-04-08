@@ -50,7 +50,7 @@ def has_right(owner, user, password):
         auth.authenticate()
         auth.acct_mgmt()
         return True
-    except PAM.error, resp:
+    except PAM.error as resp:
         LOG.debug('PAM error: %s', resp)
     return False
 

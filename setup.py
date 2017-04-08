@@ -42,7 +42,7 @@ from setuptools import setup
 
 try:
     from calypso import VERSION
-except ImportError, e:
+except ImportError as e:
     print 'Error importing Calypso, probably dependencies are not installed'
     print e
     VERSION = '0.0.1'
