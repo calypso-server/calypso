@@ -82,17 +82,16 @@ class Item(object):
             self.log.exception("Parse error in %s %s", name, path)
             raise
 
-
-        if not self.object.contents.has_key('x-calypso-name'):
+        if 'x-calypso-name' not in self.object.contents:
             if not name:
                 if self.object.name == 'VCARD' or self.object.name == 'VEVENT':
-                    if not self.object.contents.has_key('uid'):
+                    if 'uid' not in self.object.contents:
                         self.object.add('UID').value = hashlib.sha1(text).hexdigest()
                     name = self.object.uid.value
                 else:
                     for child in self.object.getChildren():
                         if child.name == 'VEVENT' or child.name == 'VCARD':
-                            if not child.contents.has_key('uid'):
+                            if 'uid' not in child.contents:
                                 child.add('UID').value = hashlib.sha1(text).hexdigest()
                             name = child.uid.value
                             break
@@ -575,7 +574,7 @@ class Collection(object):
                     for ve in events:
                         # Check for events with both dtstart and duration entries and
                         # delete the duration one
-                        if ve.contents.has_key('dtstart') and ve.contents.has_key('duration'):
+                        if 'dtstart' in ve.contents and 'duration' in ve.contents:
                             del ve.contents['duration']
                         new_ics.vevent_list = [ve]
                         new_item = Item(new_ics.serialize().decode('utf-8'), None, path, self.urlpath)
