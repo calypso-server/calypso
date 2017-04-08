@@ -19,7 +19,7 @@ key=/etc/ssl/private/ssl-cert-snakeoil.pem
 
 [acl]
 type=htpasswd
-encryption=sha1
+encryption=bcrypt
 filename=$HOME/.config/calypso/htpasswd
 EOF
 
@@ -40,7 +40,7 @@ Creating users and calendars
 
 To add a new user:
 
-$ htpasswd -s $HOME/.config/calypso/htpasswd USER
+$ htpasswd -B $HOME/.config/calypso/htpasswd USER
 
 To add a new database:
 

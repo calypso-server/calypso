@@ -41,8 +41,8 @@ personal = False
 # Htpasswd filename (if needed)
 filename = /etc/calypso/users
 # Htpasswd encryption method (if needed)
-# Value: plain | sha1 | crypt
-encryption = crypt
+# Value: plain | sha1 | crypt | bcrypt
+encryption = bcrypt
 # PAM service to use for authentication
 # pam_service = passwd
 

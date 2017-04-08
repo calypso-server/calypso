@@ -56,7 +56,7 @@ INITIAL_CONFIG = {
         "type": "fake",
         "personal": "False",
         "filename": "/etc/calypso/users",
-        "encryption": "crypt",
+        "encryption": "bcrypt",
         "pam_service": "passwd",
     },
     "storage": {

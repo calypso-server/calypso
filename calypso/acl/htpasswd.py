@@ -31,6 +31,11 @@ import base64
 import hashlib
 import os.path
 import logging
+try:
+    import bcrypt
+    have_bcrypt = True
+except ImportError:
+    have_bcrypt = False
 
 from calypso import config
 
@@ -55,6 +60,15 @@ def _sha1(hash_value, password):
     sha1 = hashlib.sha1() # pylint: disable=E1101
     sha1.update(password)
     return sha1.digest() == base64.b64decode(hash_value)
+
+
+def _bcrypt(hash_value, password):
+    if have_bcrypt:
+        password = password.encode(config.get("encoding", "stock"))
+        return bcrypt.hashpw(password, hash_value) == hash_value
+    else:
+        log.error("Bcrypt module is missing, cannot authenticate")
+        return False
 
 
 def has_right(owner, user, password):
