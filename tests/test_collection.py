@@ -22,6 +22,21 @@ class TestCollection(CalypsoTestCase):
         org = u'Universitetet i Tromsø'
         self.assertEquals(org, collection.items[0].object.org.value[0])
 
+    def test_remove_existent_item(self):
+        collection = Collection("")
+        self.assertTrue(collection.import_file(self.test_vcard))
+        self.assertEqual(len(collection.items), 2)
+        name = collection.items[0].name
+        collection.remove(name, {})
+        self.assertEqual(len(collection.items), 1)
+
+    def test_remove_nonexistent_item(self):
+        collection = Collection("")
+        self.assertTrue(collection.import_file(self.test_vcard))
+        self.assertEqual(len(collection.items), 2)
+        collection.remove("doesnotexist", {})
+        self.assertEqual(len(collection.items), 2)
+
     def test_uid_with_slash(self):
         collection = Collection("/")
         self.assertTrue(collection.import_file(self.test_resource_with_slash))
@@ -31,3 +46,4 @@ class TestCollection(CalypsoTestCase):
         c = paths.collection_from_path(veventuid)
         self.assertEquals(r, veventuid)
         self.assertEquals("/", c)
+
