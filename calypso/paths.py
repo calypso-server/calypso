@@ -111,8 +111,6 @@ def child_url(path):
 # return None
 #
 
-log = logging.getLogger()
-
 def resource_from_path(path):
     """Return Calypso item name from ``path``."""
 
