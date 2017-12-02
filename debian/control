@@ -1,6 +1,6 @@
 Source: calypso
 Section: web
-Priority: extra
+Priority: optional
 Maintainer: Debian Calypso Maintaners <calypso-maint@lists.alioth.debian.org>
 Uploaders: Keith Packard <keithp@keithp.com>,
  Jelmer Vernooĳ <jelmer@jelmer.uk>,
