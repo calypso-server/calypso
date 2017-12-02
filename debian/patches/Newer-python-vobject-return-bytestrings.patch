@@ -1,0 +1,93 @@
+From: =?utf-8?q?Guido_G=C3=BCnther?= <agx@sigxcpu.org>
+Date: Sat, 8 Apr 2017 20:54:56 +0200
+Subject: Newer python-vobject return bytestrings
+
+so decode properly from utf-8.
+
+This unbreaks calypso with newer python-vobject:
+
+    https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=841247
+---
+ calypso/webdav.py        | 23 ++++++++++++-----------
+ requirements.txt         |  2 +-
+ tests/test_collection.py |  2 +-
+ 3 files changed, 14 insertions(+), 13 deletions(-)
+
+diff --git a/calypso/webdav.py b/calypso/webdav.py
+index 1bcfecc..d23dfd8 100644
+--- a/calypso/webdav.py
++++ b/calypso/webdav.py
+@@ -376,9 +376,15 @@ class Collection(object):
+         self.log.debug('Wrote %s to %s', file, path)
+         return path
+ 
++    def _action_msg(self, action, item):
++        return u'%s %s' % (action, str(item).decode('utf-8'))
++
++    def _log_action(self, action, item):
++        self.log.debug("%s %s", action, item.name.decode('utf-8'))
++
+     def create_file(self, item, context):
+         # Create directory if necessary
+-        self.log.debug("Add %s", item.name)
++        self._log_action("Add", item)
+         if not os.path.exists(os.path.dirname(self.path)):
+             try:
+                 os.makedirs(os.path.dirname(self.path))
+@@ -386,8 +392,7 @@ class Collection(object):
+                 self.log.exception("Failed to make collection directory %s: %s", self.path, ose)
+                 raise
+ 
+-        context['action'] = u'Add %s'%item
+-
++        context['action'] = self._action_msg("Add", item)
+         try:
+             path = self.write_file(item)
+             self.git_add(path, context=context)
+@@ -401,10 +406,8 @@ class Collection(object):
+             raise
+ 
+     def destroy_file(self, item, context):
+-        self.log.debug("Remove %s", item.name)
+-
+-        context['action'] = u'Remove %s'%item
+-
++        self._log_action("Remove", item)
++        context['action'] = self._action_msg("Remove", item)
+         try:
+             os.unlink(item.path)
+             self.git_rm(item.path, context=context)
+@@ -414,10 +417,8 @@ class Collection(object):
+             raise
+ 
+     def rewrite_file(self, item, context):
+-        self.log.debug("Change %s", item.name)
+-
+-        context['action'] = u'Modify %s'%item
+-
++        self._log_action("Change", item)
++        context['action'] = self._action_msg("Modify", item)
+         try:
+             new_path = self.write_file(item)
+             os.rename(new_path, item.path)
+diff --git a/requirements.txt b/requirements.txt
+index c41513b..31d9cc7 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,2 +1,2 @@
+ daemon==1.5.5
+-vobject==0.8.1c
++vobject==0.9.4.1
+diff --git a/tests/test_collection.py b/tests/test_collection.py
+index baa49d9..dac6fd4 100644
+--- a/tests/test_collection.py
++++ b/tests/test_collection.py
+@@ -28,7 +28,7 @@ class TestCollection(unittest.TestCase):
+         collection = Collection("")
+         self.assertTrue(collection.import_file(self.test_vcard))
+         self.assertEqual(len(collection.items), 2)
+-        org = u'Universitetet i Tromsø'
++        org = u'Universitetet i Tromsø'.encode('utf-8')
+         self.assertTrue(org == collection.items[0].object.org.value[0])
+ 
+     def test_uid_with_slash(self):
