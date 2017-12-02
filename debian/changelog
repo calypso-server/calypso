@@ -1,3 +1,26 @@
+calypso (1.5-5) unstable; urgency=medium
+
+  * tests: Make sure we have a proper git config
+  * Backport python-vobject compat.
+    This is a3a397e05dca4d46bcaea237af6e5c69e5593059.
+    Thanks to gregor herrmann for digging this out (Closes: #861764)
+  * Depend on newer python-vobject to not run with 0.8.x by accident
+  * d/control: set priority to optional
+  * d/control: bump standards version
+
+ -- Guido Günther <agx@sigxcpu.org>  Sat, 02 Dec 2017 16:26:17 +0100
+
+calypso (1.5-4) unstable; urgency=medium
+
+  * tests: Make sure we have a proper git config
+  * Backport python-vobject compat
+    This is a3a397e05dca4d46bcaea237af6e5c69e5593059.
+    Thanks to gregor herrmann for digging this out (Closes: #861764)
+  * d/control: set priority to optional
+  * d/control: bump standards version
+
+ -- Guido Günther <agx@sigxcpu.org>  Sat, 02 Dec 2017 16:21:45 +0100
+
 calypso (1.5-3) unstable; urgency=medium
 
   * [55a540b] autopkg test: run the installed calypso not the one from our
